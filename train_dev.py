@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import argparse
+import datetime
 import os
+import time
+from torch.utils.tensorboard import SummaryWriter
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -35,13 +38,12 @@ class Trainer():
         self.model = self.create_model()
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
         self.loss = losses.DiceLoss()
-        self.metrics = [metrics.IoU(threshold=0.5),]
+        self.metrics = [metrics.IoU(threshold=0.5),metrics.Fscore(beta=1,threshold=0.5),metrics.Accuracy(threshold=0.5)]
         self.optimizer = torch.optim.Adam([dict(params=self.model.parameters(), lr=args.lr),])
 
         self.batch_size = args.batch_size
         self.epochs = args.epochs
         self.num_workers = args.num_workers
-
 
     def create_model(self):
         # create segmentation model with pretrained encoder
@@ -107,7 +109,23 @@ class Trainer():
         )
         return valid_epoch
 
+    # 创建log文件夹
+    def create_folder(self):
+        # 用来保存训练以及验证过程中信息
+        if not os.path.exists("logs"):
+            os.mkdir("logs")
+        # 创建时间+模型名文件夹
+        time_str = datetime.datetime.now().strftime("%m-%d %H_%M_%S-")
+        log_dir = os.path.join("logs", time_str + self.model_name)
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
+        # 实例化tensborad
+        self.tb = SummaryWriter(log_dir=log_dir)
+        return log_dir
+
     def run(self):
+        log_dir=self.create_folder()
         # 创建训练集和验证集的数据加载器
         train_loader,valid_loader = self.dataload()
 
@@ -116,10 +134,21 @@ class Trainer():
         valid_epoch2 = self.valid_one_epoch()
 
         max_score = 0
+        start_time = time.time()
         for i in range(0, self.epochs):
             print('\nEpoch: {}'.format(i))
             train_logs = train_epoch2.run(train_loader)
             valid_logs = valid_epoch2.run(valid_loader)
+            # 使用tb保存训练过程中的信息
+            self.tb.add_scalar('loss', train_logs['dice_loss'], i)
+            self.tb.add_scalar('iou_score', train_logs['iou_score'], i)
+            self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
+            # 保存训练过程中的信息
+            with open(self.results_file, "a") as f:
+                f.write("Epoch: {} - \n".format(i))
+                f.write("Train: {} - \n".format(train_logs))
+                f.write("Valid: {} - \n".format(valid_logs))
+
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']
@@ -128,6 +157,10 @@ class Trainer():
             if i == 5:
                 self.optimizer.param_groups[0]['lr'] = 1e-5
                 print('Decrease decoder learning rate to 1e-5!')
+
+        total_time = time.time() - start_time
+        total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+        print("training total_time: {}".format(total_time_str))
 
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
