@@ -140,7 +140,7 @@ class Trainer():
             train_logs = train_epoch2.run(train_loader)
             valid_logs = valid_epoch2.run(valid_loader)
             # 使用tb保存训练过程中的信息
-            self.tb.add_scalar('loss', train_logs['dice_loss'], i)
+            self.tb.add_scalar('dice_loss', train_logs['dice_loss'], i)
             self.tb.add_scalar('iou_score', train_logs['iou_score'], i)
             self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
             # 保存训练过程中的信息
@@ -165,13 +165,13 @@ class Trainer():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default="unet.yaml", type=str, help="选择模型",
+    parser.add_argument("--model", default=r"cfg/unet.yaml", type=str, help="选择模型",
                         choices=["unet","deeplabv3"])
-    parser.add_argument("--data-path", default=r'D:\Files\segmentation_models.pytorch-0.3.2/examples/data/CamVid', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'D:\Files\segmentation_models.pytorch-0.3.2\data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[512,512], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[512,512], type=int,help="图片裁剪大小")
-    parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--base-size", default=[736, 544], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[736, 544], type=int,help="图片裁剪大小")
+    parser.add_argument("--epochs", default=20, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
 
