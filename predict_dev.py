@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import argparse
 import os
+import time
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import numpy as np
@@ -113,9 +115,13 @@ def visualize(**images):
         plt.title(' '.join(name.split('_')).title())
         plt.imshow(image)
     plt.show()
-
+# 时间计算
+def time_synchronized():
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    return time.time()
 class predicter():
     def __init__(self,args):
+        self.save_dir = None
         with open(args.model, 'r', encoding='utf-8') as f:
             yamlresult = yaml.load(f.read(), Loader=yaml.FullLoader)
         self.args = args
@@ -128,7 +134,11 @@ class predicter():
         self.activation = yamlresult['activation']
         self.model_name = yamlresult['model_name']
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
-
+    def create_save_dir(self):
+        save_dir = os.path.join('out', self.model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        return save_dir
     def create_model(self):
         # create segmentation model with pretrained encoder
         best_model = torch.load(self.args.weight)
@@ -143,24 +153,37 @@ class predicter():
         )
         return predict_dataset
     def run(self):
+        self.save_dir = self.create_save_dir()
         # load best saved checkpoint
         best_model = self.create_model()
         predict_dataset = self.load_data()
-
+        predict_dataset_vis = Dataset(
+            self.dir,
+            classes=self.classes,
+        )
+        time_list = []
         for i in range(len(predict_dataset)):
-            image = predict_dataset[i]
+            image_vis = predict_dataset_vis[i].astype('uint8') # 可视化的图像
+            image = predict_dataset[i]# 用于预测的图像
+            image_name = predict_dataset.ids[i]
             height = image.shape[1]
             weight = image.shape[2]
             # 通过图像分割得到的0-1图像pr_mask
             x_tensor = torch.from_numpy(image).to(self.device).unsqueeze(0)
+            t_start = time_synchronized()
             pr_mask = best_model.predict(x_tensor)
+            t_end = time_synchronized()
+            time_list.append(t_end - t_start)
             pr_mask = (pr_mask.squeeze().cpu().numpy().round())
-            print(pr_mask.shape)
+            # 打印图像分割的时间
+            print(f"{image_name} predict time: {round(t_end - t_start,4)}s")
             # 恢复图片原来的分辨率
+            image_vis = cv2.resize(image_vis, (weight, height))# 可视化的图像
             pr_mask = cv2.resize(pr_mask, (weight, height))
             # 保存图像分割后的黑白结果图像
-            cv2.imwrite(os.path.join('pics', 'result', str(i) + '.png'), pr_mask * 255)
+            cv2.imwrite(os.path.join(self.save_dir, str(i) + '.png'), pr_mask * 255)
 
+        print("average time: {}s".format(round(sum(time_list) / len(time_list),4)))
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
