@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import argparse
 import os
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -15,28 +16,43 @@ from torch.utils.data import Dataset as BaseDataset
 
 from tools.augmentation import *
 from tools.datasets_VOC import Dataset
+import yaml
 
 class Trainer():
-    def __init__(self,DATA_DIR):
+    def __init__(self,args):
+        self.args = args
+
+        with open(args.model, 'r', encoding='utf-8') as f:
+            yamlresult = yaml.load(f.read(), Loader=yaml.FullLoader)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.dir = DATA_DIR
-        self.encoder = 'resnet34'
-        self.encoder_weights = 'imagenet'
-        self.classes = ['car']
-        self.activation = 'sigmoid'  # could be None for logits or 'softmax2d' for multiclass segmentation
-        self.model = smp.Unet(
-            encoder_name=self.encoder,
-            encoder_weights=self.encoder_weights,
-            classes=len(self.classes),
-            activation=self.activation,
-        )
+        self.dir = args.data_path
+        self.encoder = yamlresult['encoder']
+        self.encoder_weights = yamlresult['encoder_weights']
+        self.classes = yamlresult['classes']
+        self.activation = yamlresult['activation']
+        self.model_name = yamlresult['model_name']
+
+        self.model = self.create_model()
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
-        self.batch_size = 2
-        self.num_workers = 0
         self.loss = losses.DiceLoss()
         self.metrics = [metrics.IoU(threshold=0.5),]
-        self.optimizer = torch.optim.Adam([dict(params=self.model.parameters(), lr=0.0001),])
-        self.epochs = 10
+        self.optimizer = torch.optim.Adam([dict(params=self.model.parameters(), lr=args.lr),])
+
+        self.batch_size = args.batch_size
+        self.epochs = args.epochs
+        self.num_workers = args.num_workers
+
+
+    def create_model(self):
+        # create segmentation model with pretrained encoder
+        if self.model_name == 'unet':
+            model = smp.Unet(
+                encoder_name=self.encoder,
+                encoder_weights=self.encoder_weights,
+                classes=len(self.classes),
+                activation=self.activation,
+            )
+        return model
 
     def dataload(self):
         # 训练集
@@ -51,7 +67,7 @@ class Trainer():
         train_dataset = Dataset(
             x_train_dir,
             y_train_dir,
-            augmentation=get_training_augmentation(),
+            augmentation=get_training_augmentation(base_size=args.base_size, crop_size=args.crop_size),
             preprocessing=get_preprocessing(self.preprocessing_fn),
             classes=self.classes,
         )
@@ -59,7 +75,7 @@ class Trainer():
         valid_dataset = Dataset(
             x_valid_dir,
             y_valid_dir,
-            augmentation=get_validation_augmentation(),
+            augmentation=get_validation_augmentation(base_size=args.base_size),
             preprocessing=get_preprocessing(self.preprocessing_fn),
             classes=self.classes,
         )
@@ -113,121 +129,38 @@ class Trainer():
                 self.optimizer.param_groups[0]['lr'] = 1e-5
                 print('Decrease decoder learning rate to 1e-5!')
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="pytorch segnets training")
+    # 主要
+    parser.add_argument("--model", default="unet.yaml", type=str, help="选择模型",
+                        choices=["unet","deeplabv3"])
+    parser.add_argument("--data-path", default=r'D:\Files\segmentation_models.pytorch-0.3.2/examples/data/CamVid', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
+    parser.add_argument("--base-size", default=[512,512], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[480,480], type=int,help="图片裁剪大小")
+    parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
+    parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
 
+    # 暂无
+    parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
+    parser.add_argument('--resume', default=r"", help='继续训练的权重位置的路径')
+    parser.add_argument('--momentum', default=0.9, type=float, metavar='M',help='动量')
+    parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
+                        metavar='W', help='权重衰减',dest='weight_decay')
+    parser.add_argument('--optimizer', default='SGD', type=str, choices=['SGD', 'Adam', 'AdamW'], help='优化器')
+    # 其他
+    parser.add_argument('--open-tb', default=False, type=bool, help='使用tensorboard保存网络结构')
 
+    args = parser.parse_args()
+
+    return args
 
 # $# 创建模型并训练
 # ---------------------------------------------------------------
 if __name__ == '__main__':
 
     # 数据集所在的目录
-    DATA_DIR = r'D:\Files\segmentation_models.pytorch-0.3.2/examples/data/CamVid'
-    trainer = Trainer(DATA_DIR)
+    args = parse_args()
+    trainer = Trainer(args)
     trainer.run()
-
-    # 如果目录下不存在CamVid数据集，则克隆下载
-    # if not os.path.exists(DATA_DIR):
-    #     print('Loading data...')
-    #     os.system('git clone https://github.com/alexgkendall/SegNet-Tutorial ./data')
-    #     print('Done!')
-
-    # # 训练集
-    # x_train_dir = os.path.join(DATA_DIR, 'train')
-    # y_train_dir = os.path.join(DATA_DIR, 'trainannot')
-    #
-    # # 验证集
-    # x_valid_dir = os.path.join(DATA_DIR, 'val')
-    # y_valid_dir = os.path.join(DATA_DIR, 'valannot')
-
-    # ENCODER = 'resnet34'
-    # ENCODER_WEIGHTS = 'imagenet'
-    # CLASSES = ['car']
-    # ACTIVATION = 'sigmoid'  # could be None for logits or 'softmax2d' for multiclass segmentation
-    # DEVICE = 'cuda'
-
-    # 用预训练编码器建立分割模型
-    # 使用FPN模型
-    # model = smp.FPN(
-    #     encoder_name=ENCODER,
-    #     encoder_weights=ENCODER_WEIGHTS,
-    #     classes=len(CLASSES),
-    #     activation=ACTIVATION,
-    # )
-    # # 使用unet++模型
-    # model = smp.Unet(
-    #     encoder_name=ENCODER,
-    #     encoder_weights=ENCODER_WEIGHTS,
-    #     classes=len(CLASSES),
-    #     activation=ACTIVATION,
-    # )
-
-    # preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
-    #
-    # # 加载训练数据集
-    # train_dataset = Dataset(
-    #     x_train_dir,
-    #     y_train_dir,
-    #     augmentation=get_training_augmentation(),
-    #     preprocessing=get_preprocessing(preprocessing_fn),
-    #     classes=CLASSES,
-    # )
-    #
-    # # 加载验证数据集
-    # valid_dataset = Dataset(
-    #     x_valid_dir,
-    #     y_valid_dir,
-    #     augmentation=get_validation_augmentation(),
-    #     preprocessing=get_preprocessing(preprocessing_fn),
-    #     classes=CLASSES,
-    # )
-
-    # # 需根据显卡的性能进行设置，batch_size为每次迭代中一次训练的图片数，num_workers为训练时的工作进程数，如果显卡不太行或者显存空间不够，将batch_size调低并将num_workers调为0
-    # train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=0)
-    # valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=0)
-
-    # loss = losses.DiceLoss()
-    # metrics = [
-    #     metrics.IoU(threshold=0.5),
-    # ]
-    #
-    # optimizer = torch.optim.Adam([
-    #     dict(params=model.parameters(), lr=0.0001),
-    # ])
-
-    # # 创建一个简单的循环，用于迭代数据样本
-    # train_epoch =  train.TrainEpoch(
-    #     model,
-    #     loss=loss,
-    #     metrics=metrics,
-    #     optimizer=optimizer,
-    #     device=DEVICE,
-    #     verbose=True,
-    # )
-    #
-    # valid_epoch =  train.ValidEpoch(
-    #     model,
-    #     loss=loss,
-    #     metrics=metrics,
-    #     device=DEVICE,
-    #     verbose=True,
-    # )
-
-    # 进行40轮次迭代的模型训练
-    # max_score = 0
-    #
-    # for i in range(0, 40):
-    #
-    #     print('\nEpoch: {}'.format(i))
-    #     train_logs = train_epoch.run(train_loader)
-    #     valid_logs = valid_epoch.run(valid_loader)
-    #
-    #     # 每次迭代保存下训练最好的模型
-    #     if max_score < valid_logs['iou_score']:
-    #         max_score = valid_logs['iou_score']
-    #         torch.save(model, './best_model.pth')
-    #         print('Model saved!')
-    #
-    #     if i == 25:
-    #         optimizer.param_groups[0]['lr'] = 1e-5
-    #         print('Decrease decoder learning rate to 1e-5!')
-
