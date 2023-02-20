@@ -137,7 +137,7 @@ def parse_args():
     parser.add_argument("--data-path", default=r'D:\Files\segmentation_models.pytorch-0.3.2/examples/data/CamVid', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
     parser.add_argument("--base-size", default=[512,512], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[480,480], type=int,help="图片裁剪大小")
+    parser.add_argument("--crop-size", default=[512,512], type=int,help="图片裁剪大小")
     parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
