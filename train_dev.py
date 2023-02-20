@@ -69,33 +69,9 @@ class Trainer():
         valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers)
 
         return train_loader,valid_loader
-    # def train_one_epoch(self):
-    #     train_epoch = train.TrainEpoch(
-    #         self.model,
-    #         loss=self.loss,
-    #         metrics=self.metrics,
-    #         optimizer=self.optimizer,
-    #         device=self.device,
-    #         verbose=True,
-    #     )
-    #     return train_epoch
-    #
-    # def valid_one_epoch(self):
-    #     valid_epoch = train.ValidEpoch(
-    #         self.model,
-    #         loss=self.loss,
-    #         metrics=self.metrics,
-    #         device=self.device,
-    #         verbose=True,
-    #     )
-    #     return valid_epoch
 
-    def run(self):
-        train_loader,valid_loader = self.dataload()
-        # self.model.to(self.device)
-
-        # 创建一个简单的循环，用于迭代数据样本
-        train_epoch2 = train.TrainEpoch(
+    def train_one_epoch(self):
+        train_epoch = train.TrainEpoch(
             self.model,
             loss=self.loss,
             metrics=self.metrics,
@@ -103,14 +79,25 @@ class Trainer():
             device=self.device,
             verbose=True,
         )
+        return train_epoch
 
-        valid_epoch2 = train.ValidEpoch(
+    def valid_one_epoch(self):
+        valid_epoch = train.ValidEpoch(
             self.model,
             loss=self.loss,
             metrics=self.metrics,
             device=self.device,
             verbose=True,
         )
+        return valid_epoch
+
+    def run(self):
+        # 创建训练集和验证集的数据加载器
+        train_loader,valid_loader = self.dataload()
+
+        # 创建一个简单的循环，用于迭代数据样本
+        train_epoch2 = self.train_one_epoch()
+        valid_epoch2 = self.valid_one_epoch()
 
         max_score = 0
         for i in range(0, self.epochs):
