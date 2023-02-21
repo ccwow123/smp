@@ -153,4 +153,4 @@ if __name__ == '__main__':
     # # make_mask(dir,classes)
     # split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1)
 
-    visualization(dir,classes)
+    # visualization(dir,classes)
