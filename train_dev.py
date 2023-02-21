@@ -69,7 +69,8 @@ class Trainer():
         train_dataset = Dataset_Train(
             x_train_dir,
             y_train_dir,
-            augmentation=get_training_augmentation(base_size=args.base_size, crop_size=args.crop_size),
+            images_size=self.args.base_size,
+            augmentation=get_training_augmentation(base_size=self.args.base_size, crop_size=self.args.crop_size),
             preprocessing=get_preprocessing(self.preprocessing_fn),
             classes=self.classes,
         )
@@ -77,7 +78,8 @@ class Trainer():
         valid_dataset = Dataset_Train(
             x_valid_dir,
             y_valid_dir,
-            augmentation=get_validation_augmentation(base_size=args.base_size),
+            images_size=self.args.base_size,
+            augmentation=get_validation_augmentation(base_size=self.args.base_size),
             preprocessing=get_preprocessing(self.preprocessing_fn),
             classes=self.classes,
         )
@@ -175,8 +177,8 @@ def parse_args():
                         choices=["unet","deeplabv3"])
     parser.add_argument("--data-path", default=r'data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[1088, 1440], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[1088, 1440], type=int,help="图片裁剪大小")
+    parser.add_argument("--base-size", default=[544, 704], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[544, 704], type=int,help="图片裁剪大小")
     parser.add_argument("--epochs", default=200, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')

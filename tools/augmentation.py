@@ -51,7 +51,7 @@ def get_training_augmentation(base_size=(384, 480),crop_size=(384, 480)):
 def get_validation_augmentation(base_size=(384, 480)):
     """调整图像使得图片的分辨率长宽能被32整除"""
     test_transform = [
-        albu.PadIfNeeded(base_size[0], base_size[1])
+        albu.PadIfNeeded(base_size[0], base_size[1], always_apply=True, border_mode=0)
     ]
     return albu.Compose(test_transform)
 
