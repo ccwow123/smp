@@ -1,0 +1,5 @@
+model_name : 'unet'
+encoder : 'resnet34'
+encoder_weights : 'imagenet'
+classes : ['end_skew']
+activation : 'sigmoid' # one of 'sigmoid' or 'softmax2d'

@@ -29,10 +29,10 @@ class Dataset(BaseDataset):
         preprocessing (albumentations.Compose): 数据预处理
     """
     # CamVid数据集中用于图像分割的所有标签类别
-    CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
-               'tree', 'signsymbol', 'fence', 'car',
-               'pedestrian', 'bicyclist', 'unlabelled']
-
+    # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
+    #            'tree', 'signsymbol', 'fence', 'car',
+    #            'pedestrian', 'bicyclist', 'unlabelled']
+    CLASSES = ['end_skew']
     def __init__(
             self,
             images_dir,
@@ -187,9 +187,9 @@ class predicter():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument('--dir', type=str, default=r'examples/data/CamVid/test', help='test image dir')
-    parser.add_argument('--model', type=str, default=r'cfg/unet.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'./demo/best_model.pth', help='pretrained model')
+    parser.add_argument('--dir', type=str, default=r'data/test', help='test image dir')
+    parser.add_argument('--model', type=str, default=r'cfg/unet_cap.yaml', help='model name')
+    parser.add_argument('--weight', type=str, default=r'logs/02-21 09_51_18-unet/best_model_mine.pth', help='pretrained model')
     args = parser.parse_args()
 
     return args
