@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
 
 from tools.augmentation import *
-from tools.datasets_VOC import Dataset
+from tools.datasets_VOC import Dataset_Train
 import yaml
 
 class Trainer():
@@ -66,7 +66,7 @@ class Trainer():
         y_valid_dir = os.path.join(self.dir, 'valannot')
 
         # 创建训练集和验证集
-        train_dataset = Dataset(
+        train_dataset = Dataset_Train(
             x_train_dir,
             y_train_dir,
             augmentation=get_training_augmentation(base_size=args.base_size, crop_size=args.crop_size),
@@ -74,7 +74,7 @@ class Trainer():
             classes=self.classes,
         )
 
-        valid_dataset = Dataset(
+        valid_dataset = Dataset_Train(
             x_valid_dir,
             y_valid_dir,
             augmentation=get_validation_augmentation(base_size=args.base_size),

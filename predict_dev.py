@@ -14,96 +14,12 @@ import albumentations as albu
 import torch
 import segmentation_models_pytorch as smp
 from torch.utils.data import Dataset as BaseDataset
+from tools.datasets_VOC import  Dataset_Val
+from tools.augmentation import *
+from tools.img_process import contours_process
 import imageio
 import yaml
 import json
-# ---------------------------------------------------------------
-### Dataloader
-
-class Dataset(BaseDataset):
-    """CamVid数据集。进行图像读取，图像增强增强和图像预处理.
-
-    Args:
-        images_dir (str): 图像文件夹所在路径
-        masks_dir (str): 图像分割的标签图像所在路径
-        class_values (list): 用于图像分割的所有类别数
-        augmentation (albumentations.Compose): 数据传输管道
-        preprocessing (albumentations.Compose): 数据预处理
-    """
-    # CamVid数据集中用于图像分割的所有标签类别
-    # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
-    #            'tree', 'signsymbol', 'fence', 'car',
-    #            'pedestrian', 'bicyclist', 'unlabelled']
-    CLASSES = ['Background','end_skew']
-    def __init__(
-            self,
-            images_dir,
-            # masks_dir,
-            classes=None,
-            augmentation=None,
-            preprocessing=None,
-    ):
-        self.ids = os.listdir(images_dir)
-        self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
-
-        # convert str names to class values on masks
-        self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
-
-        self.augmentation = augmentation
-        self.preprocessing = preprocessing
-
-    def __getitem__(self, i):
-
-        # read data
-        image = cv2.imread(self.images_fps[i])
-        image = cv2.resize(image, (480, 384))   # 改变图片分辨率
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # 图像增强应用
-        if self.augmentation:
-            sample = self.augmentation(image=image)
-            image = sample['image']
-
-        # 图像预处理应用
-        if self.preprocessing:
-            sample = self.preprocessing(image=image)
-            image = sample['image']
-
-        return image
-
-    def __len__(self):
-        return len(self.ids)
-
-# ---------------------------------------------------------------
-
-def get_validation_augmentation():
-    """调整图像使得图片的分辨率长宽能被32整除"""
-    test_transform = [
-        albu.PadIfNeeded(384, 480)
-    ]
-    return albu.Compose(test_transform)
-
-
-def to_tensor(x, **kwargs):
-    return x.transpose(2, 0, 1).astype('float32')
-
-
-def get_preprocessing(preprocessing_fn):
-    """进行图像预处理操作
-
-    Args:
-        preprocessing_fn (callbale): 数据规范化的函数
-            (针对每种预训练的神经网络)
-    Return:
-        transform: albumentations.Compose
-    """
-
-    _transform = [
-        albu.Lambda(image=preprocessing_fn),
-        albu.Lambda(image=to_tensor),
-    ]
-    return albu.Compose(_transform)
-
 
 # 图像分割结果的可视化展示
 def visualize(**images):
@@ -123,7 +39,7 @@ def time_synchronized():
     return time.time()
 # 调试板初始化
 def palette_init():
-    palette_path = r"tools/palette.json"
+    palette_path = r'tools/palette_utils/palette.json'
     assert os.path.exists(palette_path), f"palette {palette_path} not found."
     with open(palette_path, "rb") as f:
         pallette_dict = json.load(f)
@@ -146,6 +62,7 @@ class predicter():
         self.activation = yamlresult['activation']
         self.model_name = yamlresult['model_name']
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+
     def create_save_dir(self):
         save_dir = os.path.join('out', self.model_name)
         if not os.path.exists(save_dir):
@@ -157,7 +74,7 @@ class predicter():
         return best_model
     def load_data(self):
         # create test dataset
-        predict_dataset = Dataset(
+        predict_dataset = Dataset_Val(
             self.dir,
             augmentation=get_validation_augmentation(),
             preprocessing=get_preprocessing(self.preprocessing_fn),
@@ -170,17 +87,17 @@ class predicter():
         # load best saved checkpoint
         best_model = self.create_model()
         predict_dataset = self.load_data()
-        predict_dataset_vis = Dataset(
+        predict_dataset_vis = Dataset_Val(
             self.dir,
             classes=self.classes,
         )
         time_list = []
         for i in range(len(predict_dataset)):
-            image_vis = predict_dataset_vis[i].astype('uint8') # 可视化的图像
+            image_vis = predict_dataset_vis[i] # 可视化的图像
             image = predict_dataset[i]# 用于预测的图像
             image_name = predict_dataset.ids[i]
-            height = image.shape[1]
-            weight = image.shape[2]
+            height = image_vis.shape[0]
+            weight = image_vis.shape[1]
             # 通过图像分割得到的0-1图像pr_mask
             x_tensor = torch.from_numpy(image).to(self.device).unsqueeze(0)
             t_start = time_synchronized()
@@ -201,13 +118,20 @@ class predicter():
             img_out_path = os.path.join(self.save_dir, image_name)
             # +++++
             # 不同保存模式
-            # 图像融合
-            dst = cv2.addWeighted(image_vis, 0.7, mask_cv, 0.3, 0)
-            cv2.imwrite(img_out_path, dst)
-            # 保存图像分割后的黑白结果图像
-            # cv2.imwrite(img_out_path, pr_mask)
-            # 保存图像分割后的彩色结果图像
-            # cv2.imwrite(img_out_path, mask_cv)
+            if args.method == "fusion":
+                # 图像融合
+                dst = cv2.addWeighted(image_vis, 0.7, mask_cv, 0.3, 0)
+                cv2.imwrite(img_out_path, dst)
+            elif args.method == "mask":
+                # 保存图像分割后的黑白结果图像
+                # cv2.imwrite(img_out_path, pr_mask)
+                # 保存图像分割后的彩色结果图像
+                cv2.imwrite(img_out_path, mask_cv)
+            elif args.method == "contours":
+                # 找到预测图中缺陷轮廓信息
+                pred_img=cv2.cvtColor(mask_cv, cv2.COLOR_RGB2GRAY)
+                result_img = contours_process(image_vis, pred_img,args.label)
+                cv2.imwrite(img_out_path, result_img)
 
         print("average time: {}s".format(round(sum(time_list) / len(time_list),4)))
 
@@ -225,7 +149,11 @@ def parse_args():
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/test', help='test image dir')
     parser.add_argument('--model', type=str, default=r'cfg/unet_cap.yaml', help='model name')
+    parser.add_argument("--img-size", default=None, type=int, help="图片缩放大小")
     parser.add_argument('--weight', type=str, default=r'logs/02-21 10_34_23-unet/best_model_mine.pth', help='pretrained model')
+    parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
+    # 其他
+    parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
     args = parser.parse_args()
 
     return args
