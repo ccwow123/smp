@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 
+from PIL import Image
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import numpy as np
@@ -105,8 +107,8 @@ class Dataset_Val(BaseDataset):
 
         # read data
         image = cv2.imread(self.images_fps[i])
-        image = cv2.resize(image, (480, 384))   # 改变图片分辨率
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = resize_image(image, (512, 512))   # 改变图片分辨率
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # 图像增强应用
         if self.augmentation:
@@ -122,3 +124,20 @@ class Dataset_Val(BaseDataset):
 
     def __len__(self):
         return len(self.ids)
+
+def resize_image(image, size=(512, 512)):
+    image = Image.fromarray(cv2.cvtColor(image,cv2.COLOR_BGR2RGB))
+    iw, ih = image.size
+    w, h = size
+
+    scale = min(w / iw, h / ih)
+    nw = int(iw * scale)
+    nh = int(ih * scale)
+
+    image = image.resize((nw, nh), Image.LANCZOS)
+    new_image = Image.new('RGB', size, (0, 0, 0))
+    new_image.paste(image, ((w - nw) // 2, (h - nh) // 2))
+    # pil转cv2
+    new_image = cv2.cvtColor(np.asarray(new_image), cv2.COLOR_RGB2BGR)
+
+    return new_image

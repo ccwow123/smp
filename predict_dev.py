@@ -151,7 +151,7 @@ def parse_args():
     parser.add_argument('--model', type=str, default=r'cfg/unet_cap.yaml', help='model name')
     parser.add_argument("--img-size", default=None, type=int, help="图片缩放大小")
     parser.add_argument('--weight', type=str, default=r'logs/02-21 10_34_23-unet/best_model_mine.pth', help='pretrained model')
-    parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
+    parser.add_argument("--method", default="mask", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
     args = parser.parse_args()
