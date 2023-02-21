@@ -32,7 +32,7 @@ class Dataset(BaseDataset):
     # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
     #            'tree', 'signsymbol', 'fence', 'car',
     #            'pedestrian', 'bicyclist', 'unlabelled']
-    CLASSES = ['end_skew']
+    CLASSES = ['Background','end_skew']
     def __init__(
             self,
             images_dir,

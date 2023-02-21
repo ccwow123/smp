@@ -18,7 +18,7 @@ class Dataset(BaseDataset):
         preprocessing (albumentations.Compose): 数据预处理
     """
     # CamVid数据集中用于图像分割的所有标签类别
-    CLASSES = ['end_skew']
+    CLASSES = ['Background','end_skew']
 
     # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
     #                'tree', 'signsymbol', 'fence', 'car',
