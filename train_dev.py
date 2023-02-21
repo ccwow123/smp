@@ -140,8 +140,14 @@ class Trainer():
             train_logs = train_epoch2.run(train_loader)
             valid_logs = valid_epoch2.run(valid_loader)
             # 使用tb保存训练过程中的信息
-            self.tb.add_scalar('dice_loss', train_logs['dice_loss'], i)
+            self.tb.add_scalar('loss', train_logs['dice_loss'], i)
             self.tb.add_scalar('iou_score', train_logs['iou_score'], i)
+            self.tb.add_scalar('fscore', train_logs['fscore'], i)
+            self.tb.add_scalar('accuracy', train_logs['accuracy'], i)
+            self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
+            self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
+            self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
+            self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
             self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
             # 保存训练过程中的信息
             with open(self.results_file, "a") as f:
@@ -152,7 +158,7 @@ class Trainer():
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']
-                torch.save(self.model, './best_model_mine.pth')
+                torch.save(self.model, log_dir + '/best_model.pth')
                 print('Model saved!')
             if i == 5:
                 self.optimizer.param_groups[0]['lr'] = 1e-5

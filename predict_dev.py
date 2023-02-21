@@ -3,6 +3,8 @@ import argparse
 import os
 import time
 
+from PIL import Image
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import numpy as np
@@ -14,7 +16,7 @@ import segmentation_models_pytorch as smp
 from torch.utils.data import Dataset as BaseDataset
 import imageio
 import yaml
-
+import json
 # ---------------------------------------------------------------
 ### Dataloader
 
@@ -119,6 +121,16 @@ def visualize(**images):
 def time_synchronized():
     torch.cuda.synchronize() if torch.cuda.is_available() else None
     return time.time()
+# 调试板初始化
+def palette_init():
+    palette_path = r"tools/palette.json"
+    assert os.path.exists(palette_path), f"palette {palette_path} not found."
+    with open(palette_path, "rb") as f:
+        pallette_dict = json.load(f)
+        pallette = []
+        for v in pallette_dict.values():
+            pallette += v
+    return pallette
 class predicter():
     def __init__(self,args):
         self.save_dir = None
@@ -153,6 +165,7 @@ class predicter():
         )
         return predict_dataset
     def run(self):
+        pallette = palette_init()
         self.save_dir = self.create_save_dir()
         # load best saved checkpoint
         best_model = self.create_model()
@@ -174,22 +187,45 @@ class predicter():
             pr_mask = best_model.predict(x_tensor)
             t_end = time_synchronized()
             time_list.append(t_end - t_start)
-            pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+            pr_mask = (pr_mask.squeeze().cpu().numpy().round().astype(np.uint8))
+            # 图片分割后的黑白图像转换为彩色图像
+            mask_cv = self._color(pallette, pr_mask)
+
             # 打印图像分割的时间
             print(f"{image_name} predict time: {round(t_end - t_start,4)}s")
             # 恢复图片原来的分辨率
             image_vis = cv2.resize(image_vis, (weight, height))# 可视化的图像
-            pr_mask = cv2.resize(pr_mask, (weight, height))
+            pr_mask = cv2.resize(mask_cv, (weight, height))
+
+            # 图片输出路径
+            img_out_path = os.path.join(self.save_dir, image_name)
+            # +++++
+            # 不同保存模式
+            # 图像融合
+            dst = cv2.addWeighted(image_vis, 0.7, mask_cv, 0.3, 0)
+            cv2.imwrite(img_out_path, dst)
             # 保存图像分割后的黑白结果图像
-            cv2.imwrite(os.path.join(self.save_dir, str(i) + '.png'), pr_mask * 255)
+            # cv2.imwrite(img_out_path, pr_mask)
+            # 保存图像分割后的彩色结果图像
+            # cv2.imwrite(img_out_path, mask_cv)
 
         print("average time: {}s".format(round(sum(time_list) / len(time_list),4)))
+
+    def _color(self, pallette, pr_mask):
+        # 图像格式处理
+        mask = Image.fromarray(pr_mask)
+        mask.putpalette(pallette)
+        mask = mask.convert('RGB')
+        mask_cv = np.array(mask)[..., ::-1]
+        return mask_cv
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/test', help='test image dir')
     parser.add_argument('--model', type=str, default=r'cfg/unet_cap.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'logs/02-21 09_51_18-unet/best_model_mine.pth', help='pretrained model')
+    parser.add_argument('--weight', type=str, default=r'logs/02-21 10_34_23-unet/best_model_mine.pth', help='pretrained model')
     args = parser.parse_args()
 
     return args
