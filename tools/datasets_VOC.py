@@ -96,12 +96,14 @@ class Dataset_Val(BaseDataset):
             self,
             images_dir,
             # masks_dir,
+            images_size=None,
             classes=None,
             augmentation=None,
             preprocessing=None,
     ):
         self.ids = os.listdir(images_dir)
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
+        self.images_size = images_size
 
         # convert str names to class values on masks
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
@@ -113,7 +115,9 @@ class Dataset_Val(BaseDataset):
 
         # read data
         image = cv2.imread(self.images_fps[i])
-        image = resize_image(image, (512, 512))   # 改变图片分辨率
+        if self.images_size is not None:
+            image = cv2.resize(image, self.images_size)# 改变图片分辨率
+
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # 图像增强应用
