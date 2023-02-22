@@ -20,11 +20,11 @@ class Dataset_Train(BaseDataset):
         preprocessing (albumentations.Compose): 数据预处理
     """
     # CamVid数据集中用于图像分割的所有标签类别
-    CLASSES = ['Background','end_skew']
+    # CLASSES = ['background','end_skew']
 
-    # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
-    #                'tree', 'signsymbol', 'fence', 'car',
-    #                'pedestrian', 'bicyclist', 'unlabelled']
+    CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
+                   'tree', 'signsymbol', 'fence', 'car',
+                   'pedestrian', 'bicyclist', 'unlabelled']
     #
 
     def __init__(
@@ -88,10 +88,8 @@ class Dataset_Val(BaseDataset):
         preprocessing (albumentations.Compose): 数据预处理
     """
     # CamVid数据集中用于图像分割的所有标签类别
-    # CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
-    #            'tree', 'signsymbol', 'fence', 'car',
-    #            'pedestrian', 'bicyclist', 'unlabelled']
-    CLASSES = ['Background','end_skew']
+    CLASSES = ['sky', 'building']
+    # CLASSES = ['background','end_skew']
     def __init__(
             self,
             images_dir,

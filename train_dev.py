@@ -37,8 +37,9 @@ class Trainer():
 
         self.model = self.create_model()
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
-        self.loss = losses.DiceLoss()
-        self.metrics = [metrics.IoU(threshold=0.5),metrics.Fscore(beta=1,threshold=0.5),metrics.Accuracy(threshold=0.5)]
+        self.loss = losses.DiceLoss()+losses.CrossEntropyLoss()
+        self.metrics = [metrics.IoU(threshold=0.5),metrics.Recall()]
+        # self.metrics = [metrics.IoU(threshold=0.5),metrics.Fscore(beta=1,threshold=0.5),metrics.Accuracy(threshold=0.5)]
         self.optimizer = torch.optim.Adam([dict(params=self.model.parameters(), lr=args.lr),])
 
         self.batch_size = args.batch_size
@@ -142,14 +143,16 @@ class Trainer():
             train_logs = train_epoch2.run(train_loader)
             valid_logs = valid_epoch2.run(valid_loader)
             # 使用tb保存训练过程中的信息
-            self.tb.add_scalar('loss', train_logs['dice_loss'], i)
+            self.tb.add_scalar('loss', train_logs['dice_loss + cross_entropy_loss'], i)
             self.tb.add_scalar('iou_score', train_logs['iou_score'], i)
-            self.tb.add_scalar('fscore', train_logs['fscore'], i)
-            self.tb.add_scalar('accuracy', train_logs['accuracy'], i)
-            self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
-            self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
-            self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
-            self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
+            self.tb.add_scalar('recall', train_logs['recall'], i)
+
+            # self.tb.add_scalar('fscore', train_logs['fscore'], i)
+            # self.tb.add_scalar('accuracy', train_logs['accuracy'], i)
+            # self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
+            # self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
+            # self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
+            # self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
             self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
             # 保存训练过程中的信息
             with open(self.results_file, "a") as f:
@@ -173,14 +176,14 @@ class Trainer():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default=r"cfg/unet_cap.yaml", type=str, help="选择模型",
+    parser.add_argument("--model", default=r"cfg/unet.yaml", type=str, help="选择模型",
                         choices=["unet","deeplabv3"])
-    parser.add_argument("--data-path", default=r'data', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[544, 704], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[544, 704], type=int,help="图片裁剪大小")
-    parser.add_argument("--epochs", default=200, type=int, metavar="N",help="训练轮数")
-    parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
+    parser.add_argument("--data-path", default=r'examples\data\CamVid', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=6, type=int,help="分块大小")
+    parser.add_argument("--base-size", default=[512, 512], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[512, 512], type=int,help="图片裁剪大小")
+    parser.add_argument("--epochs", default=100, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--num-workers", default=4, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
 
     # 暂无

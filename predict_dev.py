@@ -122,7 +122,9 @@ class predicter():
             # 打印图像分割的时间
             print(f"{image_name} predict time: {round(t_end - t_start,4)}s")
 
-            pr_mask = (pr_mask.squeeze().cpu().numpy().round().astype(np.uint8))
+            # pr_mask = (pr_mask.squeeze().cpu().numpy().round().astype(np.uint8))#二分类的
+            pr_mask = (pr_mask.squeeze().cpu().numpy())
+            pr_mask = (np.argmax(pr_mask, axis=0) * 255 / (pr_mask.shape[0])).astype(np.uint8)
             # 图片分割后的黑白图像转换为彩色图像
             pr_mask = self._color(pallette, pr_mask)
             # 恢复图片原来的分辨率
@@ -158,10 +160,10 @@ class predicter():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument('--dir', type=str, default=r'data/test', help='test image dir')
-    parser.add_argument('--model', type=str, default=r'cfg/unet_cap.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'logs/02-21 10_34_23-unet/best_model_mine.pth', help='pretrained model')
-    parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
+    parser.add_argument('--dir', type=str, default=r'examples\data\CamVid/test', help='test image dir')
+    parser.add_argument('--model', type=str, default=r'cfg/unet.yaml', help='model name')
+    parser.add_argument('--weight', type=str, default=r'logs/02-22 14_40_35-unet/best_model.pth', help='pretrained model')
+    parser.add_argument("--method", default="mask", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
     args = parser.parse_args()
