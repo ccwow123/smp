@@ -176,14 +176,14 @@ class Trainer():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default=r"cfg/unet.yaml", type=str, help="选择模型",
+    parser.add_argument("--model", default=r"cfg/unet_car.yaml", type=str, help="选择模型",
                         choices=["unet","deeplabv3"])
-    parser.add_argument("--data-path", default=r'examples\data\CamVid', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=6, type=int,help="分块大小")
+    parser.add_argument("--data-path", default=r'.\data\data\CamVid', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
     parser.add_argument("--base-size", default=[512, 512], type=int,help="图片缩放大小")
     parser.add_argument("--crop-size", default=[512, 512], type=int,help="图片裁剪大小")
-    parser.add_argument("--epochs", default=100, type=int, metavar="N",help="训练轮数")
-    parser.add_argument("--num-workers", default=4, type=int, help="数据加载器的线程数")
+    parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
 
     # 暂无

@@ -121,10 +121,13 @@ class predicter():
             pr_mask, t_end, t_start = self._run_one_epoch(best_model, image, time_list)
             # 打印图像分割的时间
             print(f"{image_name} predict time: {round(t_end - t_start,4)}s")
-
+            # 原代码
             # pr_mask = (pr_mask.squeeze().cpu().numpy().round().astype(np.uint8))#二分类的
-            pr_mask = (pr_mask.squeeze().cpu().numpy())
-            pr_mask = (np.argmax(pr_mask, axis=0) * 255 / (pr_mask.shape[0])).astype(np.uint8)
+            # pr_mask = (pr_mask.squeeze().cpu().numpy())
+            # pr_mask = (np.argmax(pr_mask, axis=0) * 255 / (pr_mask.shape[0])).astype(np.uint8)
+            #结果处理
+            prediction = pr_mask.argmax(1).squeeze(0)# [C, H, W] -> [1, C, H, W]
+            pr_mask = prediction.to("cpu").numpy().astype(np.uint8)
             # 图片分割后的黑白图像转换为彩色图像
             pr_mask = self._color(pallette, pr_mask)
             # 恢复图片原来的分辨率
@@ -160,7 +163,7 @@ class predicter():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument('--dir', type=str, default=r'examples\data\CamVid/test', help='test image dir')
+    parser.add_argument('--dir', type=str, default=r'.\data\data\CamVid\test', help='test image dir')
     parser.add_argument('--model', type=str, default=r'cfg/unet.yaml', help='model name')
     parser.add_argument('--weight', type=str, default=r'logs/02-22 14_40_35-unet/best_model.pth', help='pretrained model')
     parser.add_argument("--method", default="mask", choices=["fusion", "mask", "contours"], help="输出方式")

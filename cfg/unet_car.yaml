@@ -1,0 +1,5 @@
+model_name : 'unet'
+encoder : 'resnet34'
+encoder_weights : 'imagenet'
+classes : ['sky', 'building']
+activation : 'softmax2d' # one of 'sigmoid' or 'softmax2d'

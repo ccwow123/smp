@@ -19,13 +19,10 @@ class Dataset_Train(BaseDataset):
         augmentation (albumentations.Compose): 数据传输管道
         preprocessing (albumentations.Compose): 数据预处理
     """
-    # CamVid数据集中用于图像分割的所有标签类别
+    # CamVid数据集中用于图像分割的所有标签类别 直接在train中导入，这里不用写了
     # CLASSES = ['background','end_skew']
 
-    CLASSES = ['sky', 'building', 'pole', 'road', 'pavement',
-                   'tree', 'signsymbol', 'fence', 'car',
-                   'pedestrian', 'bicyclist', 'unlabelled']
-    #
+    # CLASSES = ['sky', 'building']
 
     def __init__(
             self,
@@ -42,8 +39,8 @@ class Dataset_Train(BaseDataset):
         self.masks_fps = [os.path.join(masks_dir, image_id) for image_id in self.ids]
 
         # convert str names to class values on masks
-        self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
-
+        # self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
+        self.class_values = list(range(len(classes)))
         self.augmentation = augmentation
         self.preprocessing = preprocessing
 
@@ -71,7 +68,7 @@ class Dataset_Train(BaseDataset):
         if self.preprocessing:
             sample = self.preprocessing(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
-
+            # print(mask.shape)
         return image, mask
 
     def __len__(self):
@@ -104,8 +101,8 @@ class Dataset_Val(BaseDataset):
         self.images_size = images_size
 
         # convert str names to class values on masks
-        self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
-
+        # self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
+        self.class_values = list(range(len(classes)))
         self.augmentation = augmentation
         self.preprocessing = preprocessing
 
