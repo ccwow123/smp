@@ -41,7 +41,7 @@ def make_mask(dir,classes):
         print('mask image saved to: ', os.path.join(dir,'masks',img_name+'.png'))
     print('mask images generated successfully!')
 # 之后完善可视化函数
-def visualization(dir,classes):
+def visualization(classes):
     category_types = classes
     # 将图片标注json文件批量生成训练所需的标签图像png
     imgpath_list = os.listdir(os.path.join(dir,'img_data'))
@@ -67,7 +67,7 @@ def visualization(dir,classes):
             if category == 'Gingerbread':
                 # 调试时将某种标注的填充颜色改为255，便于查看用，实际时不需进行该操作
                 mask = cv2.fillPoly(mask, [points_array], 125)
-            elif category == 'end_skew':
+            elif category == 'Coconutmilk':
                 mask = cv2.fillPoly(mask, [points_array], 255)
             else:
                 mask = cv2.fillPoly(mask, [points_array], category_types.index(category))
@@ -86,7 +86,6 @@ def split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1):
     │   ├── test 存放用于测试的图片
     │   ├── testannot 存放用于测试的图片标注
     '''
-
     # 创建数据集文件夹
     dirpath_list = ['data/train', 'data/trainannot', 'data/val', 'data/valannot', 'data/test', 'data/testannot']
     for dirpath in dirpath_list:
@@ -126,31 +125,63 @@ def split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1):
     # 将数据集和标签图片安装分类情况依次复制到对应的文件夹
     for i in tqdm(train_numlist,desc='train'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/train',total_name_list[i]+'.png')
+        new_path = os.path.join(dir,'data/train',total_name_list[i]+'.jpg')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/trainannot',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
     for i in tqdm(val_numlist,desc='val'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/val',total_name_list[i]+'.png')
+        new_path = os.path.join(dir,'data/val',total_name_list[i]+'.jpg')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/valannot',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
     for i in tqdm(test_numlist,desc='test'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/test',total_name_list[i]+'.png')
+        new_path = os.path.join(dir,'data/test',total_name_list[i]+'.jpg')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/testannot',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
     print('数据集划分完成！')
 
-if __name__ == '__main__':
-    dir = r'C:\Users\18493\Desktop\end_skew'
-    classes = ['Background', 'end_skew']
-    # # make_mask(dir,classes)
-    # split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1)
 
-    # visualization(dir,classes)
+# 生成单类别的mask
+def one_class():
+    dir = r'D:\Files\_datasets\VOC_Seg\wait_to_process'
+    classes = ['_background_', 'extension']
+    dir= os.path.join(dir,classes[1])
+    # 创建mask
+    make_mask(dir,classes)
+    # 划分数据集
+    split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1)
+# 生成多类别的mask
+def multi_class():
+    dir = r'D:\Files\_datasets\VOC_Seg\wait_to_process'
+    classes = ['_background_', 'E_collapse_angle','E_skew','E_exposure','P_extend','P_broken']
+    for i in classes:
+        cls2=['_background_']
+        cls2.append(i)
+        if i == '_background_':
+            continue
+        # 获取当前类别的文件夹
+        path = os.path.join(dir,i.replace('_', ' '))
+        print(f'当前文件夹:{path}')
+        print(f'当前类别:{cls2}')
+        # 创建mask
+        make_mask(path,cls2)
+        # 划分数据集
+        split_data(path,cls2,train_percent=0.7,val_percent=0.2,test_percent=0.1)
+
+if __name__ == '__main__':
+    # one_class()
+    # multi_class()
+
+    dir = r'D:\Files\_datasets\VOC_Seg\wait_to_process'
+    classes = ['_background_', 'collapse']
+    dir= os.path.join(dir,'E collapse angle')
+    # 创建mask
+    make_mask(dir,classes)
+    # 划分数据集
+    split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1)

@@ -55,8 +55,16 @@ class Trainer():
                 classes=len(self.classes),
                 activation=self.activation,
             )
+        # 是否加载预训练模型
+        if self.args.pretrained:
+            model = self.load_pretrained_model(model)
         return model
-
+    # 加载预训练模型
+    def load_pretrained_model(self, model):
+        checkpoint = torch.load(self.args.pretrained, map_location=self.device)
+        model.load_state_dict(checkpoint['Unet'])
+        print("Loaded pretrained model '{}'".format(self.args.pretrained))
+        return model
     def dataload(self):
         # 训练集
         x_train_dir = os.path.join(self.dir, 'train')
@@ -129,6 +137,7 @@ class Trainer():
 
     def run(self):
         log_dir=self.create_folder()
+
         # 创建训练集和验证集的数据加载器
         train_loader,valid_loader = self.dataload()
 
@@ -185,9 +194,10 @@ def parse_args():
     parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
+    parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
 
     # 暂无
-    parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
+
     parser.add_argument('--resume', default=r"", help='继续训练的权重位置的路径')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M',help='动量')
     parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
