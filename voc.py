@@ -41,7 +41,7 @@ def make_mask(dir,classes):
         print('mask image saved to: ', os.path.join(dir,'masks',img_name+'.png'))
     print('mask images generated successfully!')
 # 之后完善可视化函数
-def visualization(classes):
+def visualization(dir,classes):
     category_types = classes
     # 将图片标注json文件批量生成训练所需的标签图像png
     imgpath_list = os.listdir(os.path.join(dir,'img_data'))
@@ -125,21 +125,21 @@ def split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1):
     # 将数据集和标签图片安装分类情况依次复制到对应的文件夹
     for i in tqdm(train_numlist,desc='train'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/train',total_name_list[i]+'.jpg')
+        new_path = os.path.join(dir,'data/train',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/trainannot',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
     for i in tqdm(val_numlist,desc='val'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/val',total_name_list[i]+'.jpg')
+        new_path = os.path.join(dir,'data/val',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/valannot',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
     for i in tqdm(test_numlist,desc='test'):
         img_path = os.path.join(dir,'img_data',total_name_list[i]+'.jpg')
-        new_path = os.path.join(dir,'data/test',total_name_list[i]+'.jpg')
+        new_path = os.path.join(dir,'data/test',total_name_list[i]+'.png')
         shutil.copy(img_path, new_path)
         img_path = os.path.join(dir,'masks',total_name_list[i]+'.png')
         new_path = os.path.join(dir,'data/testannot',total_name_list[i]+'.png')
@@ -183,5 +183,6 @@ if __name__ == '__main__':
     dir= os.path.join(dir,'E collapse angle')
     # 创建mask
     make_mask(dir,classes)
+    # visualization(dir,classes)
     # 划分数据集
     split_data(dir,classes,train_percent=0.7,val_percent=0.2,test_percent=0.1)
