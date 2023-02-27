@@ -171,6 +171,7 @@ class Trainer():
                 f.write("Epoch: {} - \n".format(i))
                 f.write("Train: {} - \n".format(train_logs))
                 f.write("Valid: {} - \n".format(valid_logs))
+                f.write("Confusion matrix: {} - \n".format(val_info))
 
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
