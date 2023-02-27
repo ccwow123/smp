@@ -2,7 +2,7 @@ import sys
 import torch
 from tqdm import tqdm as tqdm
 from .meter import AverageValueMeter
-
+from ..mytools.my_metric import *
 
 class Epoch:
     def __init__(self, model, loss, metrics, stage_name, device="cpu", verbose=True):
@@ -95,7 +95,7 @@ class TrainEpoch(Epoch):
 
 
 class ValidEpoch(Epoch):
-    def __init__(self, model, loss, metrics, device="cpu", verbose=True):
+    def __init__(self, model, loss, metrics, device="cpu", verbose=True,num_classes=None):
         super().__init__(
             model=model,
             loss=loss,
@@ -104,6 +104,7 @@ class ValidEpoch(Epoch):
             device=device,
             verbose=verbose,
         )
+        self.num_classes = num_classes
 
     def on_epoch_start(self):
         self.model.eval()
@@ -113,3 +114,45 @@ class ValidEpoch(Epoch):
             prediction = self.model.forward(x)
             loss = self.loss(prediction, y)
         return loss, prediction
+    def run(self, dataloader):
+
+        self.on_epoch_start()
+
+        logs = {}
+        loss_meter = AverageValueMeter()
+        metrics_meters = {metric.__name__: AverageValueMeter() for metric in self.metrics}
+        # 我的指标
+        confmat = ConfusionMatrix(self.num_classes)
+        ###以上是我的指标
+        with tqdm(
+            dataloader,
+            desc=self.stage_name,
+            file=sys.stdout,
+            disable=not (self.verbose),
+        ) as iterator:
+            for x, y in iterator:
+                x, y = x.to(self.device), y.to(self.device)
+                loss, y_pred = self.batch_update(x, y)
+
+                # update loss logs
+                loss_value = loss.cpu().detach().numpy()
+                loss_meter.add(loss_value)
+                loss_logs = {self.loss.__name__: loss_meter.mean}
+                logs.update(loss_logs)
+
+                # update metrics logs
+                for metric_fn in self.metrics:
+                    metric_value = metric_fn(y_pred, y).cpu().detach().numpy()
+                    metrics_meters[metric_fn.__name__].add(metric_value)
+                    # 我的指标
+                    confmat.update(y.argmax(1).flatten(), y_pred.argmax(1).flatten())#这里要修夫debug试试
+                confmat.reduce_from_all_processes()
+                ###以上是我的指标
+                metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
+                logs.update(metrics_logs)
+
+                if self.verbose:
+                    s = self._format_logs(logs)
+                    iterator.set_postfix_str(s)
+
+        return logs,confmat

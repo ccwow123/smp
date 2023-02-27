@@ -117,6 +117,7 @@ class Trainer():
             metrics=self.metrics,
             device=self.device,
             verbose=True,
+            num_classes=len(self.classes),
         )
         return valid_epoch
 
@@ -150,7 +151,9 @@ class Trainer():
         for i in range(0, self.epochs):
             print('\nEpoch: {}'.format(i))
             train_logs = train_epoch2.run(train_loader)
-            valid_logs = valid_epoch2.run(valid_loader)
+            valid_logs,confmat = valid_epoch2.run(valid_loader)
+            val_info = str(confmat)
+            print(val_info)
             # 使用tb保存训练过程中的信息
             self.tb.add_scalar('loss', train_logs['dice_loss + cross_entropy_loss'], i)
             self.tb.add_scalar('iou_score', train_logs['iou_score'], i)
@@ -182,14 +185,15 @@ class Trainer():
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print("training total_time: {}".format(total_time_str))
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
     parser.add_argument("--model", default=r"cfg/unet_cap_multi_res18.yaml", type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[512, 512], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[512, 512], type=int,help="图片裁剪大小")
+    parser.add_argument("--base-size", default=[256, 256], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[256, 256], type=int,help="图片裁剪大小")
     parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')

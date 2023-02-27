@@ -5,7 +5,7 @@ import segmentation_models_pytorch as smp
 
 if __name__ == "__main__":
     # 读取yaml文件
-    yamlpath='cfg/unet_cap_multi_res18.yaml'
+    yamlpath='cfg/unet_cap_multi_res34.yaml'
     # pass
     with open(yamlpath, 'r', encoding='utf-8') as f:
         yamlresult = yaml.load(f.read(), Loader=yaml.FullLoader)
