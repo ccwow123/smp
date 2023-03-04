@@ -138,6 +138,54 @@ class Trainer():
         # 实例化tensborad
         self.tb = SummaryWriter(log_dir=log_dir)
         return log_dir
+    # 数据集预处理
+    def get_preprocessing_fn(self):
+        if self.encoder_weights is not None:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+        else:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
+
+        return preprocessing_fn
+
+    # 保存训练过程中的信息
+    def save_logs(self, i, log_dir, max_score, train_logs, val_info, valid_logs):
+        # 使用tb保存训练过程中的信息
+        self.tb.add_scalar('train_loss', train_logs['dice_loss'], i)
+        self.tb.add_scalar('train_iou_score', train_logs['iou_score'], i)
+        self.tb.add_scalar('train_recall', train_logs['recall'], i)
+        self.tb.add_scalar('train_fscore', train_logs['fscore'], i)
+        self.tb.add_scalar('train_accuracy', train_logs['accuracy'], i)
+        self.tb.add_scalar('train_Precision', train_logs['precision'], i)
+        # 保存验证过程中的信息
+        self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
+        self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
+        self.tb.add_scalar('val_recall', valid_logs['recall'], i)
+        self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
+        self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
+        self.tb.add_scalar('val_Precision', valid_logs['precision'], i)
+        # 保存学习率
+        self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
+        # 保存网络图
+        if i == 0:
+            self.tb.add_graph(self.model,
+                              torch.rand(1, 3, self.args.crop_size[0], self.args.crop_size[1]).to(self.device))
+        # 保存训练过程中的信息
+        with open(self.results_file, "a") as f:
+            f.write("Epoch: {} - \n".format(i))
+            f.write("Train: {} - \n".format(train_logs))
+            f.write("Valid: {} - \n".format(valid_logs))
+            f.write("Confusion matrix: {} - \n".format(val_info))
+            if i == self.epochs - 1:
+                f.write("\n\nModel cfg: {} - \n".format(self.cfg))
+                f.write("datasets: {} - \n".format(self.dir))
+        # do something (save model, change lr, etc.)
+        if max_score < valid_logs['iou_score']:
+            max_score = valid_logs['iou_score']
+            torch.save(self.model, log_dir + '/best_model.pth')
+            print('Model saved!')
+        if i == 5:
+            self.optimizer.param_groups[0]['lr'] = 1e-5
+            print('Decrease decoder learning rate to 1e-5!')
 
     def run(self):
         log_dir=self.create_folder()
@@ -157,59 +205,12 @@ class Trainer():
             valid_logs,confmat = valid_epoch2.run(valid_loader)
             val_info = str(confmat)
             print(val_info)
-            # 使用tb保存训练过程中的信息
-            self.tb.add_scalar('train_loss', train_logs['dice_loss'], i)
-            self.tb.add_scalar('train_iou_score', train_logs['iou_score'], i)
-            self.tb.add_scalar('train_recall', train_logs['recall'], i)
-            self.tb.add_scalar('train_fscore', train_logs['fscore'], i)
-            self.tb.add_scalar('train_accuracy', train_logs['accuracy'], i)
-            self.tb.add_scalar('train_Precision', train_logs['precision'], i)
-
-            # 保存验证过程中的信息
-            self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
-            self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
-            self.tb.add_scalar('val_recall', valid_logs['recall'], i)
-            self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
-            self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
-            self.tb.add_scalar('val_Precision', valid_logs['precision'], i)
-            # 保存学习率
-            self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
-            # 保存网络图
-            if i == 0:
-                self.tb.add_graph(self.model, torch.rand(1, 3, self.args.crop_size[0], self.args.crop_size[1]).to(self.device))
-
-
-            # 保存训练过程中的信息
-            with open(self.results_file, "a") as f:
-                f.write("Epoch: {} - \n".format(i))
-                f.write("Train: {} - \n".format(train_logs))
-                f.write("Valid: {} - \n".format(valid_logs))
-                f.write("Confusion matrix: {} - \n".format(val_info))
-                if i == self.epochs - 1:
-                    f.write("\n\nModel cfg: {} - \n".format(self.cfg))
-                    f.write("datasets: {} - \n".format(self.dir))
-
-            # do something (save model, change lr, etc.)
-            if max_score < valid_logs['iou_score']:
-                max_score = valid_logs['iou_score']
-                torch.save(self.model, log_dir + '/best_model.pth')
-                print('Model saved!')
-            if i == 5:
-                self.optimizer.param_groups[0]['lr'] = 1e-5
-                print('Decrease decoder learning rate to 1e-5!')
+            self.save_logs(i, log_dir, max_score, train_logs, val_info, valid_logs)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print("training total_time: {}".format(total_time_str))
 
-
-    def get_preprocessing_fn(self):
-        if self.encoder_weights is not None:
-            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
-        else:
-            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
-
-        return preprocessing_fn
 
 
 def parse_args():
