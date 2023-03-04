@@ -36,7 +36,8 @@ class Trainer():
         self.model_name = yamlresult['model_name']
 
         self.model = self.create_model()
-        self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+        self.preprocessing_fn =self.get_preprocessing_fn()
+        # self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
         self.loss = losses.DiceLoss()
         # self.metrics = [metrics.IoU(threshold=0.5),metrics.Recall()]
         self.metrics = [metrics.IoU(threshold=0.5),metrics.Fscore(beta=1,threshold=0.5),metrics.Accuracy(threshold=0.5)
@@ -198,10 +199,19 @@ class Trainer():
         print("training total_time: {}".format(total_time_str))
 
 
+    def get_preprocessing_fn(self):
+        if self.encoder_weights is not None:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+        else:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
+
+        return preprocessing_fn
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default=r"cfg/unet/unet_cap_multi_res101.yaml", type=str, help="选择模型,查看cfg文件夹")
+    parser.add_argument("--model", default=r"cfg/unet/unet_cap_multi_res18.yaml", type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
     parser.add_argument("--base-size", default=[256, 256], type=int,help="图片缩放大小")
