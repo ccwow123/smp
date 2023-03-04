@@ -29,6 +29,7 @@ class Trainer():
             yamlresult = yaml.load(f.read(), Loader=yaml.FullLoader)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.dir = args.data_path
+        self.cfg=yamlresult
         self.encoder = yamlresult['encoder']
         self.encoder_weights = yamlresult['encoder_weights']
         self.classes = yamlresult['classes']
@@ -184,6 +185,9 @@ class Trainer():
                 f.write("Train: {} - \n".format(train_logs))
                 f.write("Valid: {} - \n".format(valid_logs))
                 f.write("Confusion matrix: {} - \n".format(val_info))
+                if i == self.epochs - 1:
+                    f.write("\n\nModel cfg: {} - \n".format(self.cfg))
+                    f.write("datasets: {} - \n".format(self.dir))
 
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
