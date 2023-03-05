@@ -216,7 +216,7 @@ class Trainer():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default=r"cfg/unet/Transformer/unet_cap_multi_mit_b0.yaml",
+    parser.add_argument("--model", default=r"cfg/unet/MobileNet/unet_cap_multi_mobilenetv3_small_minimal_100.yaml",
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")

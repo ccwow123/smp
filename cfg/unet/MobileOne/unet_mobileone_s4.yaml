@@ -1,0 +1,5 @@
+model_name : 'unet'
+encoder : 'mobileone_s4'
+encoder_weights :
+classes : ['sky', 'building']
+activation : 'softmax2d' # one of 'sigmoid' or 'softmax2d'
