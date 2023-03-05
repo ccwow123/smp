@@ -213,16 +213,16 @@ class Trainer():
 
 
 
-def parse_args():
+def parse_args(cfg_path):
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument("--model", default=r"cfg/unet/MobileNet/unet_cap_multi_mobilenetv3_small_minimal_100.yaml",
+    parser.add_argument("--model", default=cfg_path,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[256, 256], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[256, 256], type=int,help="图片裁剪大小")
-    parser.add_argument("--epochs", default=2, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--base-size", default=[512, 512], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[512, 512], type=int,help="图片裁剪大小")
+    parser.add_argument("--epochs", default=1, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -244,8 +244,8 @@ def parse_args():
 # $# 创建模型并训练
 # ---------------------------------------------------------------
 if __name__ == '__main__':
-
+    cfg_path = r'cfg/unet/MobileOne/unet_mobileone_s0.yaml'
     # 数据集所在的目录
-    args = parse_args()
+    args = parse_args(cfg_path)
     trainer = Trainer(args)
     trainer.run()
