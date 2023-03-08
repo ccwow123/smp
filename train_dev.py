@@ -20,7 +20,7 @@ from torch.utils.data import Dataset as BaseDataset
 from tools.augmentation import *
 from tools.datasets_VOC import Dataset_Train
 import yaml
-
+import wandb
 class Trainer():
     def __init__(self,args):
         self.args = args
@@ -219,10 +219,10 @@ def parse_args(cfg_path):
     parser.add_argument("--model", default=cfg_path,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=2, type=int,help="分块大小")
-    parser.add_argument("--base-size", default=[512, 512], type=int,help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[512, 512], type=int,help="图片裁剪大小")
-    parser.add_argument("--epochs", default=1, type=int, metavar="N",help="训练轮数")
+    parser.add_argument("--batch-size", default=6, type=int,help="分块大小")
+    parser.add_argument("--base-size", default=[64, 64], type=int,help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[64, 64], type=int,help="图片裁剪大小")
+    parser.add_argument("--epochs", default=10, type=int, metavar="N",help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -247,5 +247,12 @@ if __name__ == '__main__':
     cfg_path = r'cfg/unet/MobileOne/unet_mobileone_s0.yaml'
     # 数据集所在的目录
     args = parse_args(cfg_path)
+    # # wanDB设置
+    # config = {'data-path': args.data_path,'batch-size': args.batch_size}
+    # wandb.init(project="smp",
+    #            name='每次改一下名称',
+    #            config=config)
+
     trainer = Trainer(args)
     trainer.run()
+
