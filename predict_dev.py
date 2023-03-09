@@ -61,10 +61,20 @@ class predicter():
         self.classes = yamlresult['classes']
         self.activation = yamlresult['activation']
         self.model_name = yamlresult['model_name']
-        self.preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+        self.preprocessing_fn = self.get_preprocessing_fn()
 
+    # 数据集预处理
+    def get_preprocessing_fn(self):
+        if self.encoder_weights is not None:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
+        else:
+            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
+
+        return preprocessing_fn
     def create_save_dir(self):
-        save_dir = os.path.join('out', self.model_name)
+        # save_dir = os.path.join('out', self.model_name)
+        name=self.model_name + '_' + self.encoder
+        save_dir = os.path.join('out',name)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         return save_dir
@@ -163,10 +173,10 @@ class predicter():
 def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    parser.add_argument('--dir', type=str, default=r'.\data\data\CamVid\test', help='test image dir')
-    parser.add_argument('--model', type=str, default=r'cfg/unet.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'logs/02-22 14_40_35-unet/best_model.pth', help='pretrained model')
-    parser.add_argument("--method", default="mask", choices=["fusion", "mask", "contours"], help="输出方式")
+    parser.add_argument('--dir', type=str, default=r'data/multi/data\test', help='test image dir')
+    parser.add_argument('--model', type=str, default=r'cfg/unet/Transformer/unet_cap_multi_mit_b0.yaml', help='model name')
+    parser.add_argument('--weight', type=str, default=r'D:\Files\_Weights\smp_logs\03-04 16_18_44-unet\best_model.pth', help='pretrained model')
+    parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
     args = parser.parse_args()
