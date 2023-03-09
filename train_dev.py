@@ -187,9 +187,6 @@ class Trainer():
             max_score = valid_logs['iou_score']
             torch.save(self.model, log_dir + '/best_model.pth')
             print('Model saved!')
-        if i == 5:
-            self.optimizer.param_groups[0]['lr'] = 1e-5
-            print('Decrease decoder learning rate to 1e-5!')
 
     def run(self):
         log_dir=self.create_folder()
