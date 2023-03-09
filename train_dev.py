@@ -148,23 +148,24 @@ class Trainer():
         return preprocessing_fn
 
     # 保存训练过程中的信息
-    def save_logs(self, i, log_dir, max_score, train_logs, val_info, valid_logs):
+    def save_logs(self, i, log_dir, max_score, train_logs, val_info, valid_logs,confmat):
         # 使用tb保存训练过程中的信息
         self.tb.add_scalar('train_loss', train_logs['dice_loss'], i)
-        self.tb.add_scalar('train_iou_score', train_logs['iou_score'], i)
-        self.tb.add_scalar('train_recall', train_logs['recall'], i)
-        self.tb.add_scalar('train_fscore', train_logs['fscore'], i)
-        self.tb.add_scalar('train_accuracy', train_logs['accuracy'], i)
-        self.tb.add_scalar('train_Precision', train_logs['precision'], i)
+        # self.tb.add_scalar('train_iou_score', train_logs['iou_score'], i)
+        # self.tb.add_scalar('train_recall', train_logs['recall'], i)
+        # self.tb.add_scalar('train_fscore', train_logs['fscore'], i)
+        # self.tb.add_scalar('train_accuracy', train_logs['accuracy'], i)
+        # self.tb.add_scalar('train_precision', train_logs['precision'], i)
         # 保存验证过程中的信息
         self.tb.add_scalar('val_loss', valid_logs['dice_loss'], i)
-        self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
-        self.tb.add_scalar('val_recall', valid_logs['recall'], i)
-        self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
-        self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
-        self.tb.add_scalar('val_Precision', valid_logs['precision'], i)
-        # 保存学习率
-        self.tb.add_scalar('lr', self.optimizer.param_groups[0]['lr'], i)
+        # self.tb.add_scalar('val_iou_score', valid_logs['iou_score'], i)
+        # self.tb.add_scalar('val_recall', valid_logs['recall'], i)
+        # self.tb.add_scalar('val_fscore', valid_logs['fscore'], i)
+        # self.tb.add_scalar('val_accuracy', valid_logs['accuracy'], i)
+        # self.tb.add_scalar('val_precision', valid_logs['precision'], i)
+        # 保存验证信息2
+        self.tb.add_scalar('global correct',confmat.acc_global,i)
+        self.tb.add_scalar('mean IoU', confmat.mean_iu, i)
         # 保存网络图
         if i == 0:
             self.tb.add_graph(self.model,
@@ -205,7 +206,7 @@ class Trainer():
             valid_logs,confmat = valid_epoch2.run(valid_loader)
             val_info = str(confmat)
             print(val_info)
-            self.save_logs(i, log_dir, max_score, train_logs, val_info, valid_logs)
+            self.save_logs(i, log_dir, max_score, train_logs, val_info, valid_logs,confmat)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
