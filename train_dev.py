@@ -19,6 +19,7 @@ from torch.utils.data import Dataset as BaseDataset
 
 from tools.augmentation import *
 from tools.datasets_VOC import Dataset_Train
+from tools.mytools import Time_calculater
 import yaml
 import wandb
 class Trainer():
@@ -48,6 +49,8 @@ class Trainer():
         self.batch_size = args.batch_size
         self.epochs = args.epochs
         self.num_workers = args.num_workers
+
+        self.time_calculater = Time_calculater()
 
     def create_model(self):
         # create segmentation model with pretrained encoder
@@ -207,6 +210,7 @@ class Trainer():
             val_info = str(confmat)
             print(val_info)
             self.save_logs(i, log_dir, max_score, train_logs, val_info, valid_logs,confmat)
+            self.time_calculater.time_cal(i,self.epochs)
 
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
