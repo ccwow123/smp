@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 import torch
 import torchvision
 from thop import profile
@@ -18,9 +20,11 @@ def calculater_1(model, input_size=(3, 512, 512)):
 def calculater_2(model, input_size=(3, 512, 512)):
     summary(model, input_size=input_size)
 
-if __name__ == "__main__":
+# 单次计算
+def single(yamlpath):
+    global model
     # 读取yaml文件
-    yamlpath='cfg/unet.yaml'
+    # yamlpath = r'cfg/unet/Transformer/unet_cap_multi_mit_b0.yaml'
     input_size = (3, 512, 512)
     # pass
     with open(yamlpath, 'r', encoding='utf-8') as f:
@@ -37,5 +41,22 @@ if __name__ == "__main__":
         activation=activation,
     ).cuda()
     # 输出网络计算量
-    calculater_1(model,input_size)
+    calculater_1(model, input_size)
     # calculater_2(model,input_size)
+
+
+if __name__ == "__main__":
+    yaml_list = []
+    head =['ResNeSt']
+    path = r'cfg/unet'
+    for i in head:
+        temp = os.path.join(path,i)
+        yaml_list.append(temp)
+    for i in yaml_list:
+        for j in os.listdir(i):
+            yamlpath = os.path.join(i,j)
+            print(yamlpath)
+            single(yamlpath)
+            print('-----------------------')
+
+    # single()
