@@ -43,10 +43,10 @@ class Time_calculater(object):
 class Train_base:
     def __init__(self,args):
         self.args = args
+        self.model_name = args.model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.epochs = args.epochs
         # 工具类
-        self.log_dir = self.create_folder()
+        self.log_dir = self._create_folder()
         self.time_calculater = Time_calculater()
         # 创建log文件夹
 
@@ -85,20 +85,22 @@ class Train_base:
         pass
         # return train_loader,valid_loader
     # 建立优化器和损失函数
-    def create_optimizer(self):
+    def create_optimizer(self,model):
         # 损失函数
-        self.criterion = torch.nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr)
+        return criterion,optimizer
     # 建立学习率调整策略
-    def create_lr_scheduler(self):
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
+    def create_lr_scheduler(self,optimizer):
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        return scheduler
 
-    def train_one_epoch(self,model,train_loader):
+    def train_one_epoch(self,*args):
         pass
-    def valid_one_epoch(self,model,valid_loader):
+    def valid_one_epoch(self,*args):
         pass
     # 保存训练过程中的信息
-    def save_logs(self, i, log_train, log_val):
+    def save_logs(self, i, log_train, log_val,*args):
         # 使用tb保存训练过程中的信息
         self.tb.add_scalar("train_loss", log_train, i)
         self.tb.add_scalar("valid_loss", log_val, i)
@@ -116,9 +118,9 @@ class Train_base:
         # 创建模型
         model = self._create_model()
         # 创建优化器和损失函数
-        self._create_optimizer()
+        loss,optimizer=self.create_optimizer(model)
         # 创建学习率调整策略
-        self._create_lr_scheduler()
+        lr_scheduler=self.create_lr_scheduler(optimizer)
         # 创建一个简单的循环，用于迭代数据样本
         train_epoch = self.train_one_epoch(model,train_loader)
         val_epoch = self.valid_one_epoch(model,valid_loader)

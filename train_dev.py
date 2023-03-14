@@ -225,7 +225,7 @@ def parse_args(cfg_path):
     # 主要
     parser.add_argument("--model", default=cfg_path,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")

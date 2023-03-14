@@ -182,6 +182,7 @@ class ConfusionMatrix(object):
             # 统计像素真实类别a[k]被预测成类别b[k]的个数(这里的做法很巧妙)
             inds = n * a[k].to(torch.int64) + b[k]
             self.mat += torch.bincount(inds, minlength=n**2).reshape(n, n)
+        self.acc_global, acc, iu, self.mean_iu = self.compute()
 
     def reset(self):
         if self.mat is not None:
@@ -198,7 +199,7 @@ class ConfusionMatrix(object):
         # 计算平均iou
         mean_iu = iu.mean().item() * 100
         return acc_global, acc, iu,mean_iu
-
+    # 将混淆矩阵在所有进程中进行同步
     def reduce_from_all_processes(self):
         if not torch.distributed.is_available():
             return
@@ -213,10 +214,23 @@ class ConfusionMatrix(object):
         self.acc_global = acc_global.item() * 100
         return (
             'global correct: {:.1f}\n'
+            'mean IoU: {:.1f}\n'
             'average row correct: {}\n'
-            'IoU: {}\n'
-            'mean IoU: {:.1f}').format(
-                acc_global.item() * 100,
+            'IoU: {}\n').format(
+                self.acc_global,
+                self.mean_iu,
                 ['{:.1f}'.format(i) for i in (acc * 100).tolist()],
-                ['{:.1f}'.format(i) for i in (iu * 100).tolist()],
-                iu.mean().item() * 100)
+                ['{:.1f}'.format(i) for i in (iu * 100).tolist()])
+    # def __str__(self):
+    #     acc_global, acc, iu ,mean_iu= self.compute()
+    #     self.mean_iu = iu.mean().item() * 100
+    #     self.acc_global = acc_global.item() * 100
+    #     return (
+    #         'global correct: {:.1f}\n'
+    #         'average row correct: {}\n'
+    #         'IoU: {}\n'
+    #         'mean IoU: {:.1f}').format(
+    #             acc_global.item() * 100,
+    #             ['{:.1f}'.format(i) for i in (acc * 100).tolist()],
+    #             ['{:.1f}'.format(i) for i in (iu * 100).tolist()],
+    #             iu.mean().item() * 100)
