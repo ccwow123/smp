@@ -48,7 +48,7 @@ def single(yamlpath):
 if __name__ == "__main__":
     yaml_list = []
     head =['ResNeSt']
-    path = r'cfg/unet'
+    path = r'../cfg/unet'
     for i in head:
         temp = os.path.join(path,i)
         yaml_list.append(temp)
@@ -59,4 +59,3 @@ if __name__ == "__main__":
             single(yamlpath)
             print('-----------------------')
 
-    # single()
