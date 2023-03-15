@@ -171,13 +171,13 @@ class Trainer():
         val_info = str(confmat)
         print(val_info)
         with open(self.results_file, "a") as f:
-            f.write("Epoch: {} - \n".format(i))
-            f.write("Train: {} - \n".format(log_train))
-            f.write("Valid: {} - \n".format(log_val))
-            f.write("Confusion matrix:\n {} - \n".format(val_info))
-            if i == self.args.epochs - 1:
-                f.write("\n\nModel cfg: {} - \n".format(self.cfg))
-                f.write("datasets: {} - \n".format(self.args.data_path))
+            f.write("Epoch: {}  \n".format(i))
+            f.write("Train: {}  \n".format(log_train))
+            f.write("Valid: {}  \n".format(log_val))
+            f.write("Confusion matrix:\n {}  \n".format(val_info))
+            if i == self.args.epochs :
+                f.write("\n\nModel cfg: {}  \n".format(self.cfg))
+                f.write("datasets: {}  \n".format(self.args.data_path))
 
     def run(self):
         # 创建训练集和验证集的数据加载器
@@ -231,11 +231,11 @@ def parse_args(cfg_path):
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
     parser.add_argument("--model", default=cfg_path,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[32, 32], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[32, 32], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--data-path", default=r'data/E skew', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
+    parser.add_argument("--base-size", default=[512, 512], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[512, 512], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=50, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     # 加载预训练记得修改lr，越小越好
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
@@ -251,7 +251,7 @@ def parse_args(cfg_path):
 
 
 if __name__ == '__main__':
-    cfg_path = r'cfg/unet/MobileOne/unet_mobileone_s0.yaml'
+    cfg_path = r'cfg/unet/ResNet/unet_cap_multi_res34.yaml'
     # 数据集所在的目录
     args = parse_args(cfg_path)
     # # wanDB设置

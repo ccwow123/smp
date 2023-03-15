@@ -158,33 +158,12 @@ class Detecter():
                 pred_img = cv2.cvtColor(prediction, cv2.COLOR_RGB2GRAY)
                 result_img = contours_process(image_vis, pred_img, self.args.label)
                 cv2.imwrite(img_out_path, result_img)
-    def run_cam(self):
-        # 加载数据 前者用于推理 后者用于可视化
-        predict_dataset,predict_dataset_vis = self.load_data()
-        # 创建模型
-        model = self.create_model()
-        # 模型推理
-        model.eval()
-        for i in range(len(predict_dataset)):
-            image,image_name = predict_dataset[i],predict_dataset.ids[i]
-            # 原图大小
-            image_vis = predict_dataset_vis[i]
-            height, weight = image_vis.shape[0], image_vis.shape[1]
-            # 图片输出路径
-            img_out_path = os.path.join(self.save_dir, image_name)
-            # 推理
-            with torch.no_grad():
-                image = torch.from_numpy(image).to(self.device).unsqueeze(0)
-                start_time = time_synchronized()
-                pr_mask = model.predict(image)#[1, 2, 512, 512]
-                print(f"{image_name}--推理时间：{time_synchronized() - start_time:.3f}s")
-            # 后处理
 
 
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="pytorch segnets training")
+    parser = argparse.ArgumentParser(description="预测")
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/multi/data/test', help='test image dir')
     parser.add_argument('--model', type=str, default=r'cfg/unet/Transformer/unet_cap_multi_mit_b0.yaml', help='model name')
