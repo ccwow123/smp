@@ -16,9 +16,9 @@ from tools.augmentation import *
 from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
+from src.unets.unet import Unet
 
-
-class Trainer():
+class Trainer:
     def __init__(self, args):
         self.cfg = self._load_cfg()
         # 数据集预处理
@@ -29,7 +29,6 @@ class Trainer():
         # 工具类
         self.log_dir = self._create_folder()
         self.time_calculater = Time_calculater()
-     # 创建log文件夹
     def _create_folder(self):
         # 用来保存训练以及验证过程中信息
         if not os.path.exists("logs"):
@@ -59,12 +58,7 @@ class Trainer():
 
     def _create_model(self):
         # create segmentation model with pretrained encoder
-        model = smp.Unet(
-            encoder_name=self.encoder,
-            encoder_weights=self.encoder_weights,
-            classes=len(self.classes),
-            activation=self.activation,
-        )
+        model = Unet(num_classes=len(self.classes), pretrained = False, backbone=self.encoder)
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -112,10 +106,8 @@ class Trainer():
         return train_loader, valid_loader
         # 数据集预处理
     def get_preprocessing_fn(self):
-        if self.encoder_weights is not None:
-            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
-        else:
-            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
+
+        preprocessing_fn = smp.encoders.get_preprocessing_fn('resnet34', 'imagenet')
 
         return preprocessing_fn
     # 建立优化器和损失函数
@@ -210,7 +202,8 @@ class Trainer():
                     'state_dict': model.state_dict(),
                     'optimizer': optimizer.state_dict()
                 }
-                torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
+                # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
+                torch.save(model,os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
             self.time_calculater.time_cal(i, self.args.epochs)
         # 计算训练时间
@@ -219,14 +212,14 @@ class Trainer():
         print("training total_time: {}".format(total_time_str))
 
 
-def parse_args(cfg_path):
+def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
-    parser.add_argument("--model", default=cfg_path,
+    parser.add_argument("--model", default='cfg/unet_myresnet.yaml',
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
+    parser.add_argument("--batch-size", default=1, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
@@ -250,14 +243,7 @@ def parse_args(cfg_path):
 
 
 if __name__ == '__main__':
-    cfg_path = r'cfg/unet/MobileOne/unet_mobileone_s0.yaml'
     # 数据集所在的目录
-    args = parse_args(cfg_path)
-    # # wanDB设置
-    # config = {'data-path': args.data_path,'batch-size': args.batch_size}
-    # wandb.init(project="smp",
-    #            name='每次改一下名称',
-    #            config=config)
-
+    args = parse_args()
     trainer = Trainer(args)
     trainer.run()

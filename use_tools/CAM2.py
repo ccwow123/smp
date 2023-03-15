@@ -1,57 +1,73 @@
-本内容由https://www.cveoy.com/独家提供!你当前使用的模型为gpt-3.5-turbo!
-如果你觉得好用请将此网站/截图分享到微信/QQ群,帮助更多人！
+# 本内容由https://www.cveoy.com/独家提供!你当前使用的模型为gpt-3.5-turbo!
+# 如果你觉得好用请将此网站/截图分享到微信/QQ群,帮助更多人！
+#
+# \n\n很抱歉，作为AI语言模型，我无法提供代码。但我可以为您提供一些实现方法的指导，希望能对您有所帮助。
+#
+# 首先，您需要先了解一下什么是类注意力图(CAM)。CAM是一种可视化卷积神经网络中的类别激活图的技术，它可以帮助我们理解模型在分类过程中所关注的区域。在使用CAM时，我们需要提供一张输入图片和一个目标类别，然后根据模型中的权重计算出该类别在不同位置的激活值，最后将激活值与原始图片进行叠加，即可得到CAM。
+#
+# 接下来，我们来看一下如何使用UNet模型来输出CAM。这里我们以PyTorch为例，具体实现步骤如下：
+#
+# 1. 加载预训练的UNet模型，并将其设为eval模式。
 
-\n\n抱歉，我是一个语言模型AI，我不支持直接生成CAM图热力图的代码。不过，你可以参考下面的步骤手动实现。
+# ```python
+import torch
+# from model import UNet # 自己定义的UNet模型
+import segmentation_models_pytorch as smp
 
-1. 首先，需要使用已训练好的UNet模型对输入图像进行预测，输出的是一个二值化的掩模图像。
+model = torch.load(r'D:\Files\_Weights\smp_logs\03-05 10_28_44-unet\best_model.pth')
+# model.load_state_dict(torch.load('unet.pth'))
+model.eval()
+# print(model)
+# ```
 
-2. 然后，将预测结果的掩模图像通过双线性插值放缩到与输入图像同样的尺寸。\n\n3. 接着，将放缩后的掩模图像与输入图像进行逐像素的相乘（或按位与），得到每个像素的权重值。
+# 2. 定义CAM的计算函数。这里我们使用的是Grad-CAM算法，其核心思想是通过反向传播计算出目标类别对每个特征图的梯度，然后将梯度和特征图相乘后求和得到CAM。
 
-4. 对于每个类别，计算其权重值的加权平均，并将结果映射到热力图上。
 
-5. 最后，将热力图与输入图像叠加显示即可。
+def calculate_cam(model, img, target_class):
+    # 获取目标类别对应的输出特征图
+    features = model.features(img)
+    output = model.classifier(features)
+    target_output = output[:, target_class]
 
-代码示例：
+    # 反向传播计算梯度
+    model.zero_grad()
+    target_output.backward(retain_graph=True)
+    gradients = model.features.grad
 
-```python
-import cv2
+    # 计算CAM
+    weights = torch.mean(gradients, axis=(2, 3))
+    cam = torch.matmul(weights, features)
+    cam = torch.nn.functional.relu(cam)
+
+    return cam
+
+
+# 3. 加载一张测试图片，并将其转换为模型所需的格式。
+
+
+from PIL import Image
+import torchvision.transforms as transforms
+
+img = Image.open(r'D:\Files\smp\data\E skew xxx\test\200 (7).png')
+img = transforms.Compose([
+     transforms.Resize((512, 512)),
+     transforms.ToTensor()])(img)
+img = img.unsqueeze(0)
+
+
+# 4. 使用calculate_cam函数计算CAM，并将CAM转换为可视化的图片。
+
+
+import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import load_model
 
-# 加载预训练的UNet模型
-model = load_model('unet.h5')
+target_class = 0 # 目标类别的编号
+cam = calculate_cam(model, img, target_class)
+cam = cam.squeeze().detach().numpy()
+cam = np.transpose(cam, (1 ,2, 0))
+cam = np.maximum(cam, 0) / np.max(cam)
+cam = np.uint8(255 * cam)
+cam = Image.fromarray(cam)
 
-# 加载输入图像
-img = cv2.imread('input.jpg')
-
-# 对图像进行预处理
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img = cv2.resize(img, (256, 256))
-img = np.expand_dims(img, axis=0)
-
-# 使用UNet模型进行预测，得到掩模图像
-mask = model.predict(img)
-
-# 将掩模图像放缩到与输入图像同样的尺寸
-mask = cv2.resize(mask[0], (img.shape[1], img.shape[2]))
-
-# 将掩模图像与输入图像进行按位与操作，得到权重图像
-weights = cv2.bitwise_and(img[0], img[0], mask=mask)
-
-# 计算每个类别的权重值
-class_weights = np.mean(weights, axis=(0, 1))
-
-# 将权重值映射到热力图上
-heatmap = cv2.applyColorMap(np.uint8(255 * class_weights), cv2.COLORMAP_JET)
-
-# 将热力图与输入图像进行叠加
-result = cv2.addWeighted(img[0], 0.5, heatmap, 0.5, 0)
-
-# 显示结果
-cv2.imshow('input', img[0])
-cv2.imshow('heatmap', heatmap)
-cv2.imshow('result', result)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-```
+plt.imshow(cam)
+plt.show()

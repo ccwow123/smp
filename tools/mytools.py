@@ -43,7 +43,7 @@ class Time_calculater(object):
 class Train_base:
     def __init__(self,args):
         self.args = args
-        self.model_name = args.model_name
+        # self.model_name = args.model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # 工具类
         self.log_dir = self._create_folder()

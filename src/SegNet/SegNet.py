@@ -136,7 +136,7 @@ class SegNet(nn.Module):
         x = self.up8(x, x1)
         logits = self.out_conv(x)
 
-        return {"out": logits}
+        return logits
 
 class SegNet_samll(nn.Module):
     def __init__(self,
