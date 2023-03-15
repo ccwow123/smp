@@ -72,8 +72,9 @@ class Trainer():
     # 加载预训练模型
     def _load_pretrained_model(self, model):
         #这里看权重文件的格式，如果是字典的话就用load_state_dict，如果是模型的话就用load_model
-        checkpoint = torch.load(os.path.join(self.args.pretrained, 'best_model.pth'))
-        model.load_state_dict(checkpoint)
+        model = torch.load(self.args.pretrained)
+        # checkpoint = torch.load(os.path.join(self.args.pretrained, 'best_model.pth'))
+        # model.load_state_dict(checkpoint['state_dict'])
         print("Loaded pretrained model '{}'".format(self.args.pretrained))
         return model
     # 加载数据集
@@ -122,6 +123,10 @@ class Trainer():
     def create_optimizer(self,model):
         loss = losses.DiceLoss()
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=self.args.lr), ])
+        # if self.args.pretrained:
+        #     checkpoint = torch.load(os.path.join(self.args.pretrained, 'best_model.pth'))
+        #     optimizer.load_state_dict(checkpoint['optimizer'])
+        #     print("优化器预训练： '{}'".format(self.args.pretrained))
         return loss,optimizer
     # 建立学习率调整策略
     def create_lr_scheduler(self,optimizer):
@@ -205,12 +210,13 @@ class Trainer():
             # 保存最好的模型
             if max_score < confmat.mean_iu:
                 max_score = confmat.mean_iu
-                checkpoint = {
-                    'epoch': i,
-                    'state_dict': model.state_dict(),
-                    'optimizer': optimizer.state_dict()
-                }
-                torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
+                torch.save(model, os.path.join(self.log_dir, 'best_model.pth'))
+                # checkpoint = {
+                #     'epoch': i,
+                #     'state_dict': model.state_dict(),
+                #     'optimizer': optimizer.state_dict()
+                # }
+                # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
             self.time_calculater.time_cal(i, self.args.epochs)
         # 计算训练时间
@@ -227,25 +233,20 @@ def parse_args(cfg_path):
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
+    parser.add_argument("--base-size", default=[32, 32], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[32, 32], type=int, help="图片裁剪大小")
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
+    # 加载预训练记得修改lr，越小越好
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
 
     # 暂无
-
-    parser.add_argument('--resume', default=r"", help='继续训练的权重位置的路径')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='动量')
     parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
                         metavar='W', help='权重衰减', dest='weight_decay')
     parser.add_argument('--optimizer', default='SGD', type=str, choices=['SGD', 'Adam', 'AdamW'], help='优化器')
-    # 其他
-    parser.add_argument('--open-tb', default=False, type=bool, help='使用tensorboard保存网络结构')
-
     args = parser.parse_args()
-
     return args
 
 
