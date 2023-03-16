@@ -7,7 +7,7 @@ from thop import profile
 import yaml
 from torchsummary import summary
 import segmentation_models_pytorch as smp
-
+from src.unet.unet_modification import UnetRes,UnetRes_DSC
 # 整体参数量 + 计算量
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
@@ -34,21 +34,27 @@ def single(yamlpath):
     classes = yamlresult['classes']
     activation = yamlresult['activation']
     # 要计算的模型
-    model = smp.Unet(
-        encoder_name=encoder,
-        encoder_weights=encoder_weights,
-        classes=len(classes),
-        activation=activation,
-    ).cuda()
+    # model = smp.Unet(
+    #     encoder_name=encoder,
+    #     encoder_weights=encoder_weights,
+    #     classes=len(classes),
+    #     activation=activation,
+    # ).cuda()
+    # model = UnetRes(in_channel=3, out_channel=len(classes),depth=encoder).cuda()
+    model = UnetRes_DSC(in_channel=3, out_channel=len(classes),depth=encoder).cuda()
     # 输出网络计算量
     calculater_1(model, input_size)
     # calculater_2(model,input_size)
 
 
+
+
 if __name__ == "__main__":
+    head =['my_unet']
+    path = r'../cfg'
+
+
     yaml_list = []
-    head =['ResNeSt']
-    path = r'../cfg/unet'
     for i in head:
         temp = os.path.join(path,i)
         yaml_list.append(temp)
