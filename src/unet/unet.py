@@ -93,7 +93,7 @@ class UNet(nn.Module):
         x = self.up4(x, x1)
         logits = self.out_conv(x)
 
-        return {"out": logits}
+        return logits
 
 
 if __name__ == "__main__":

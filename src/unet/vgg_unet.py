@@ -96,4 +96,4 @@ class VGG16UNet(nn.Module):
         x = self.up4(x, backbone_out['stage0'])
         x = self.conv(x)
 
-        return {"out": x}
+        return  x

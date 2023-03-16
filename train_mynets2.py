@@ -16,8 +16,8 @@ from tools.augmentation import *
 from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
-from src.unets.unet import Unet
 from src.unet.resnet import UResnet
+from src.unet.unet_modification import UnetRes
 
 class Trainer:
     def __init__(self, args):
@@ -58,10 +58,10 @@ class Trainer:
         return yamlresult
 
     def _create_model(self):
-        if self.model_name == 'unet':
-            model = Unet(num_classes=len(self.classes), pretrained = False, backbone=self.encoder)
-        elif self.model_name == 'UResnet':
+        if self.model_name == 'UResnet':
             model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
+        elif self.model_name == 'unet_mod':
+            model = UnetRes(in_channel=3, out_channel=len(self.classes),depth=self.encoder)
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -200,11 +200,11 @@ class Trainer:
             # 保存最好的模型
             if max_score < confmat.mean_iu:
                 max_score = confmat.mean_iu
-                checkpoint = {
-                    'epoch': i,
-                    'state_dict': model.state_dict(),
-                    'optimizer': optimizer.state_dict()
-                }
+                # checkpoint = {
+                #     'epoch': i,
+                #     'state_dict': model.state_dict(),
+                #     'optimizer': optimizer.state_dict()
+                # }
                 # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
                 torch.save(model,os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
@@ -219,9 +219,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
-    parser.add_argument("--model", default='cfg/unet_myresnet.yaml',
+    parser.add_argument("--model", default='cfg/my_unet/unet_myresnet.yaml',
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=10, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")

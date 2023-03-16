@@ -98,4 +98,4 @@ class MobileV3Unet(nn.Module):
         x = self.conv(x)
         x = F.interpolate(x, size=input_shape, mode="bilinear", align_corners=False)
 
-        return {"out": x}
+        return x
