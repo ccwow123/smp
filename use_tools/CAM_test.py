@@ -38,12 +38,12 @@ class SemanticSegmentationTarget:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="生成CAM图")
-    parser.add_argument('--data_path', type=str, default=r'../data/E skew/train', help='images dir')
-    parser.add_argument('--weights_path', type=str, default=r'../logs/03-15 21_26_16-unet/best_model.pth', help='模型权重')
-    parser.add_argument('--out_path', type=str, default=r'../out/CAM', help='输出路径')
+    parser.add_argument('--data_path', type=str, default=r'../data/multi/data/test', help='images dir')
+    parser.add_argument('--weights_path', type=str, default=r'../logs/old/03-05 13_22_51-unet/best_model.pth', help='模型权重')
+    parser.add_argument('--out_path', type=str, default=r'../out/CAM-res152', help='输出路径')
     parser.add_argument("--img_size", default=(512, 512), help="图片大小")
     parser.add_argument("--classes", default=['_background_', 'abnormal'], help="训练标签")
-    parser.add_argument("--category", default='abnormal', help="热图目标类别")
+    parser.add_argument("--category", default='_background_', help="热图目标类别")
     parser.add_argument('--method', type=str, default='gradcam',
                         choices=['gradcam', 'gradcam++', 'scorecam', 'xgradcam',
                                  'ablationcam', 'eigencam', 'eigengradcam'],
@@ -73,10 +73,13 @@ def main(args):
     # 1.加载模型
     model = torch.load(weights_path)
     model = model.eval()
-    # print(model)
+    print(model)##########################这里要分析网络结构
     if torch.cuda.is_available():
         model = model.cuda()
+
+    # target_layers = [model.segmentation_head]#########################################记得这里要分析网络结构并修改
     target_layers = [model.encoder.layer4]#########################################记得这里要分析网络结构并修改
+
     # 2.导入图片
     img_list = os.listdir(path)
     for img_name in img_list:
@@ -100,7 +103,8 @@ def main(args):
         car_mask = normalized_masks[0, :, :, :].argmax(axis=0).detach().cpu().numpy()
         car_mask_float = np.float32(car_mask == car_category)
         # 原来是用来进行拼接的
-        # car_mask_uint8 = 255 * np.uint8(car_mask == car_category)
+        car_mask_uint8 = 255 * np.uint8(car_mask == car_category)
+        cv2.imwrite(os.path.join(out_path, 'mask_' + img_name), car_mask_uint8)#打印mask
         # both_images = np.hstack((rgb_img, np.repeat(car_mask_uint8[:, :, None], 3, axis=-1))) # 拼接图片,mask要上色
 
         # 5.总结目标的预测热图

@@ -1,5 +1,5 @@
-model_name : 'unet'
-encoder : 'vgg'
-encoder_weights : ''
-classes : ['sky', 'building']
+model_name : 'UResnet'
+encoder :
+encoder_weights :
+classes : ['_background_', 'abnormal']
 activation : 'sigmoid' # one of 'sigmoid' or 'softmax2d'

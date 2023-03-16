@@ -36,7 +36,7 @@ class Trainer():
             os.mkdir("logs")
         # 创建时间+模型名文件夹
         time_str = datetime.datetime.now().strftime("%m-%d %H_%M_%S-")
-        log_dir = os.path.join("logs", time_str + self.model_name)
+        log_dir = os.path.join("logs", time_str + self.model_name +'-' +self.encoder)
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
         self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
@@ -231,7 +231,7 @@ def parse_args(cfg_path):
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
     parser.add_argument("--model", default=cfg_path,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/E skew', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[512, 512], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[512, 512], type=int, help="图片裁剪大小")

@@ -17,6 +17,7 @@ from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
 from src.unets.unet import Unet
+from src.unet.resnet import UResnet
 
 class Trainer:
     def __init__(self, args):
@@ -57,8 +58,10 @@ class Trainer:
         return yamlresult
 
     def _create_model(self):
-        # create segmentation model with pretrained encoder
-        model = Unet(num_classes=len(self.classes), pretrained = False, backbone=self.encoder)
+        if self.model_name == 'unet':
+            model = Unet(num_classes=len(self.classes), pretrained = False, backbone=self.encoder)
+        elif self.model_name == 'UResnet':
+            model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -218,11 +221,11 @@ def parse_args():
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
     parser.add_argument("--model", default='cfg/unet_myresnet.yaml',
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=1, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=10, type=int, help="分块大小")
+    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=500, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")

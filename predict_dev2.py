@@ -74,10 +74,10 @@ class Detecter():
         return save_dir
     # 获取图像预处理函数
     def get_preprocessing_fn(self):
-        if self.encoder_weights is not None:
+        if self.encoder_weights :
             preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, self.encoder_weights)
         else:
-            preprocessing_fn = smp.encoders.get_preprocessing_fn(self.encoder, 'imagenet')
+            preprocessing_fn = smp.encoders.get_preprocessing_fn('resnet18', 'imagenet')
 
         return preprocessing_fn
     # 加载训练集
@@ -134,7 +134,7 @@ class Detecter():
             with torch.no_grad():
                 image = torch.from_numpy(image).to(self.device).unsqueeze(0)
                 start_time = time_synchronized()
-                pr_mask = model.predict(image)#[1, 2, 512, 512]
+                pr_mask = model(image)#[1, 2, 512, 512]
                 print(f"{image_name}--推理时间：{time_synchronized() - start_time:.3f}s")
             # 后处理
             prediction = pr_mask.argmax(1).squeeze(0).to("cpu").numpy().astype(np.uint8)
@@ -166,8 +166,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="预测")
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/multi/data/test', help='test image dir')
-    parser.add_argument('--model', type=str, default=r'cfg/unet/Transformer/unet_cap_multi_mit_b0.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'D:\Files\_Weights\smp_logs\03-04 16_18_44-unet\best_model.pth', help='pretrained model')
+    parser.add_argument('--model', type=str, default=r'cfg/unet/ResNet/unet_cap_multi_res152.yaml', help='model name')
+    parser.add_argument('--weight', type=str, default=r'logs/old/03-05 13_22_51-unet/best_model.pth', help='pretrained model')
     parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")

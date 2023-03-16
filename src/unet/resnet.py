@@ -138,4 +138,4 @@ class UResnet(nn.Module):
         x0_1 = self.conv0_1(torch.cat([x0_0, self.up(x1_1)], 1))
 
         output = self.final(x0_1)
-        return {"out": output}
+        return output
