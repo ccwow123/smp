@@ -38,13 +38,13 @@ class SemanticSegmentationTarget:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="生成CAM图")
-    parser.add_argument('--data_path', type=str, default=r'data/E skew/train', help='images dir')
-    parser.add_argument('--weights_path', type=str, default=r'D:\Files\_Weights\smp_logs\03-04 21_18_34-unet\best_model.pth', help='模型权重')
-    parser.add_argument('--out_path', type=str, default=r'out/CAM/E skew', help='输出路径')
+    parser.add_argument('--data_path', type=str, default=r'../data/E skew/train', help='images dir')
+    parser.add_argument('--weights_path', type=str, default=r'../logs/03-15 21_26_16-unet/best_model.pth', help='模型权重')
+    parser.add_argument('--out_path', type=str, default=r'../out/CAM', help='输出路径')
     parser.add_argument("--img_size", default=(512, 512), help="图片大小")
     parser.add_argument("--classes", default=['_background_', 'abnormal'], help="训练标签")
     parser.add_argument("--category", default='abnormal', help="热图目标类别")
-    parser.add_argument('--method', type=str, default='gradcam++',
+    parser.add_argument('--method', type=str, default='gradcam',
                         choices=['gradcam', 'gradcam++', 'scorecam', 'xgradcam',
                                  'ablationcam', 'eigencam', 'eigengradcam'],
                         help='CAM方法')
