@@ -86,7 +86,7 @@ class VGGBlock(nn.Module):  # vgg的block作为resnet的conv
         return out
 
 
-class UResnet(nn.Module):
+class Unet_resnet(nn.Module):
     def __init__(self, input_channels=3,num_classes=2,depth=18):
         super().__init__()
         if depth == 18:

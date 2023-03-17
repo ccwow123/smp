@@ -17,9 +17,7 @@ from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
 from thop import profile
-from src.unet.resnet import UResnet
-from src.unet_mod.unet_modification import UnetRes
-from src.unet_mod.dense_unet import DenseUNet
+from src.unet_mod.unet_resnet import Unet_resnet
 from src.unet_mod.unet_att import AttU_Net
 
 def calculater_1(model, input_size=(3, 512, 512)):
@@ -70,17 +68,20 @@ class Trainer:
         # self.wandb = wandb.init(project='newproject',name='每次改一下名称', config=config, dir=log_dir)
         return log_dir
 
-
     def _create_model(self):
-        if self.model_name == 'UResnet':
-            model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
-        elif self.model_name == 'unet_mod':
-            model = UnetRes(in_channel=3, out_channel=len(self.classes),depth=self.encoder)
-        elif self.model_name == 'dense_unet':
-            pretrained_encoder_uri = 'https://download.pytorch.org/models/densenet121-a639ec97.pth'
-            model = DenseUNet(n_classes=len(self.classes),  downsample=True,pretrained_encoder_uri=None)
-        elif self.model_name == 'unet_att':
-            model = AttU_Net(in_channel=3, num_classes=len(self.classes))
+        models = {
+            # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
+            'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
+            'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
+        }
+        # 创建模型
+        model = models[self.model_name]
+        # if self.model_name == 'UResnet':
+        #     model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
+        # elif self.model_name == 'unet_mod':
+        #     model = UnetRes(in_channel=3, out_channel=len(self.classes),depth=self.encoder)
+        # elif self.model_name == 'unet_att':
+        #     model = AttU_Net(in_channel=3, num_classes=len(self.classes))
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -244,7 +245,6 @@ class Trainer:
 def parse_args(cfgpath):
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
-    # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
@@ -272,7 +272,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_myresnet.yaml'
+    cfgpath = r'cfg/my_unet/unet_myresnet2.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

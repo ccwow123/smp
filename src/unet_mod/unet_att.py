@@ -241,3 +241,8 @@ class AttU_Net(nn.Module):
 
         return d1
 # -*- coding: utf-8 -*-
+if __name__ == '__main__':
+    net = AttU_Net()
+    # print(net)
+    x = torch.rand((3, 3, 512, 512))
+    print(net.forward(x).shape)
