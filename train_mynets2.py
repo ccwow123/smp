@@ -19,6 +19,7 @@ import yaml
 from src.unet.resnet import UResnet
 from src.unet_mod.unet_modification import UnetRes
 from src.unet_mod.dense_unet import DenseUNet
+from src.unet_mod.unet_att import AttU_Net
 
 class Trainer:
     def __init__(self, args):
@@ -69,6 +70,8 @@ class Trainer:
         elif self.model_name == 'dense_unet':
             pretrained_encoder_uri = 'https://download.pytorch.org/models/densenet121-a639ec97.pth'
             model = DenseUNet(n_classes=len(self.classes),  downsample=True,pretrained_encoder_uri=None)
+        elif self.model_name == 'unet_att':
+            model = AttU_Net(in_channel=3, num_classes=len(self.classes))
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
