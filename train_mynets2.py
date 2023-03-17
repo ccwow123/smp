@@ -16,11 +16,20 @@ from tools.augmentation import *
 from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
+from thop import profile
 from src.unet.resnet import UResnet
 from src.unet_mod.unet_modification import UnetRes
 from src.unet_mod.dense_unet import DenseUNet
 from src.unet_mod.unet_att import AttU_Net
 
+def calculater_1(model, input_size=(3, 512, 512)):
+    # model = torchvision.models.alexnet(pretrained=False)
+    # dummy_input = torch.randn(1, 3, 224, 224)
+    dummy_input = torch.randn(1, *input_size).cuda()
+    flops, params = profile(model, (dummy_input,))
+    print('flops: %.2fG' % (flops / 1e9))
+    print('params: %.2fM' % (params / 1e6))
+    return flops/ 1e9, params/ 1e6
 class Trainer:
     def __init__(self, args):
         self.args = args
@@ -174,10 +183,11 @@ class Trainer:
             f.write("Epoch: {} - \n".format(i))
             f.write("Train: {} - \n".format(log_train))
             f.write("Valid: {} - \n".format(log_val))
-            f.write("Confusion matrix:\n {} - \n".format(val_info))
-            if i == self.args.epochs - 1:
-                f.write("\n\nModel cfg: {} - \n".format(self.cfg))
-                f.write("datasets: {} - \n".format(self.args.data_path))
+            f.write("Confusion matrix:\n {}  \n".format(val_info))
+            if i == self.args.epochs :
+                f.write("Model cfg: {}  \n".format(self.cfg))
+                f.write("datasets: {}  \n".format(self.args.data_path))
+                f.write('flops：{}  params:{}  \n'.format(self.model_size[0], self.model_size[1]))
 
     def run(self):
         # 创建训练集和验证集的数据加载器
@@ -206,6 +216,9 @@ class Trainer:
             lr_scheduler.step()
 
             # 保存训练过程中的信息
+            if i==self.args.epochs:
+                input_size=(3,self.args.base_size[0],self.args.base_size[1])
+                self.model_size=calculater_1(model,input_size)
             self.save_logs(i, log_train, log_val, confmat, optimizer)
             # 保存最好的模型
             if max_score < confmat.mean_iu:
@@ -235,10 +248,10 @@ def parse_args(cfgpath):
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[512, 512], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[512, 512], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=100, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
+    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=1, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -259,7 +272,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_mydense.yaml'
+    cfgpath = r'cfg/my_unet/unet_myresnet.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
