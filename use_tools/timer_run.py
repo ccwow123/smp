@@ -11,7 +11,7 @@ def loop(cfg_path):
     trainer = Trainer(args)
     trainer.run()
 if __name__ == '__main__':
-    cfg_path1 = r"D:\hjj\smp\cfg\my_unet\unet_myresnet.yaml"
+    cfg_path1 = r"cfg/my_unet/unet_mydense.yaml"
     # cfg_path2 = r"cfg/unet/MobileOne/unet_mobileone_s2.yaml"
     print("start")
     # timer的第一个参数是时间（s），第二个参数是函数名，第三个参数是函数的参数，以元组的形式传入

@@ -17,37 +17,23 @@ from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
 from src.unet.resnet import UResnet
-from src.unet.unet_modification import UnetRes
+from src.unet_mod.unet_modification import UnetRes
+from src.unet_mod.dense_unet import DenseUNet
 
 class Trainer:
     def __init__(self, args):
+        self.args = args
         self.cfg = self._load_cfg()
         # 数据集预处理
         self.preprocessing_fn = self.get_preprocessing_fn()
-        self.args = args
         # self.model_name = args.model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # 工具类
         self.log_dir = self._create_folder()
         self.time_calculater = Time_calculater()
-    def _create_folder(self):
-        # 用来保存训练以及验证过程中信息
-        if not os.path.exists("logs"):
-            os.mkdir("logs")
-        # 创建时间+模型名文件夹
-        time_str = datetime.datetime.now().strftime("%m-%d %H_%M_%S-")
-        log_dir = os.path.join("logs", time_str + self.model_name)
-        if not os.path.exists(log_dir):
-            os.mkdir(log_dir)
-        self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
-        # 实例化tensborad
-        self.tb = SummaryWriter(log_dir=log_dir)
-        # 实例化wandb
-        # config = {'data-path': self.args.data_path, 'batch-size': self.args.batch_size}
-        # self.wandb = wandb.init(project='newproject',name='每次改一下名称', config=config, dir=log_dir)
-        return log_dir
+
     def _load_cfg(self):
-        with open(args.model, 'r', encoding='utf-8') as f:
+        with open(self.args.model, 'r', encoding='utf-8') as f:
             yamlresult = yaml.load(f.read(), Loader=yaml.FullLoader)
         self.encoder = yamlresult['encoder']
         self.encoder_weights = yamlresult['encoder_weights']
@@ -57,11 +43,32 @@ class Trainer:
 
         return yamlresult
 
+    def _create_folder(self):
+        # 用来保存训练以及验证过程中信息
+        if not os.path.exists("logs"):
+            os.mkdir("logs")
+        # 创建时间+模型名文件夹
+        time_str = datetime.datetime.now().strftime("%m-%d %H_%M_%S-")
+        log_dir = os.path.join("logs", time_str + self.model_name+'_'+str(self.encoder))
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
+        # 实例化tensborad
+        self.tb = SummaryWriter(log_dir=log_dir)
+        # 实例化wandb
+        # config = {'data-path': self.args.data_path, 'batch-size': self.args.batch_size}
+        # self.wandb = wandb.init(project='newproject',name='每次改一下名称', config=config, dir=log_dir)
+        return log_dir
+
+
     def _create_model(self):
         if self.model_name == 'UResnet':
             model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
         elif self.model_name == 'unet_mod':
             model = UnetRes(in_channel=3, out_channel=len(self.classes),depth=self.encoder)
+        elif self.model_name == 'dense_unet':
+            pretrained_encoder_uri = 'https://download.pytorch.org/models/densenet121-a639ec97.pth'
+            model = DenseUNet(n_classes=len(self.classes),  downsample=True,pretrained_encoder_uri=None)
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -208,6 +215,9 @@ class Trainer:
                 # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
                 torch.save(model,os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
+            # 保存网络结构
+            self.tb.add_graph(model, torch.rand(1, 3, 512, 512).to(self.device))
+            # 计算剩余训练时间
             self.time_calculater.time_cal(i, self.args.epochs)
         # 计算训练时间
         total_time = time.time() - start_time
@@ -215,17 +225,17 @@ class Trainer:
         print("training total_time: {}".format(total_time_str))
 
 
-def parse_args():
+def parse_args(cfgpath):
     parser = argparse.ArgumentParser(description="pytorch segnets training")
     # 主要
     # parser.add_argument('--model_name', default='unet', type=str, help='模型名称')
-    parser.add_argument("--model", default='cfg/my_unet/unet_myresnet.yaml',
+    parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=10, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=500, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--batch-size", default=6, type=int, help="分块大小")
+    parser.add_argument("--base-size", default=[512, 512], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[512, 512], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=100, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -246,7 +256,8 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    cfgpath = r'cfg/my_unet/unet_mydense.yaml'
     # 数据集所在的目录
-    args = parse_args()
+    args = parse_args(cfgpath)
     trainer = Trainer(args)
     trainer.run()
