@@ -76,8 +76,6 @@ class BottleNeck(nn.Module):
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
-
-
 class UnetRes(nn.Module):
 
     def __init__(self,in_channel,out_channel, depth):
@@ -233,7 +231,7 @@ class UnetRes(nn.Module):
         except:
             print("Error resnet34 weights in mynet !")
             raise
-cla
+
 
 if __name__ == '__main__':
     net = UnetRes(in_channel=3,out_channel=3,depth=18)
