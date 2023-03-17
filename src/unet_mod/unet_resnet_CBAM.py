@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 class BasicBlock(nn.Module):
     expansion = 1
     '''
@@ -30,8 +29,6 @@ class BasicBlock(nn.Module):
 
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
-
-
 class BottleNeck(nn.Module):
     expansion = 4
 
@@ -64,8 +61,6 @@ class BottleNeck(nn.Module):
 
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
-
-
 class VGGBlock(nn.Module):  # vgg的block作为resnet的conv
     def __init__(self, in_channels, middle_channels, out_channels):
         super().__init__()
@@ -85,8 +80,53 @@ class VGGBlock(nn.Module):  # vgg的block作为resnet的conv
         out = self.second(out)
         return out
 
+# CBAM
+class ChannelAttentionModule(nn.Module):
+    def __init__(self, channel, ratio=16):
+        super(ChannelAttentionModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
 
-class Unet_resnet(nn.Module):
+        self.shared_MLP = nn.Sequential(
+            nn.Conv2d(channel, channel // ratio, 1, bias=False),
+            nn.ReLU(),
+            nn.Conv2d(channel // ratio, channel, 1, bias=False)
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avgout = self.shared_MLP(self.avg_pool(x))
+        maxout = self.shared_MLP(self.max_pool(x))
+        return self.sigmoid(avgout + maxout)
+
+class SpatialAttentionModule(nn.Module):
+    def __init__(self):
+        super(SpatialAttentionModule, self).__init__()
+        self.conv2d = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avgout = torch.mean(x, dim=1, keepdim=True)
+        maxout, _ = torch.max(x, dim=1, keepdim=True)
+        out = torch.cat([avgout, maxout], dim=1)
+        out = self.sigmoid(self.conv2d(out))
+        return out
+
+class CBAM(nn.Module):
+    def __init__(self, channel):
+        super(CBAM, self).__init__()
+        self.channel_attention = ChannelAttentionModule(channel)
+        self.spatial_attention = SpatialAttentionModule()
+
+    def forward(self, x):
+        out = self.channel_attention(x) * x
+        print(self.spatial_attention(out).shape)
+        out = self.spatial_attention(out) * out
+        return out
+
+
+
+class Unet_resnet_CBAM(nn.Module):
     def __init__(self, input_channels=3,num_classes=2,depth=18):
         super().__init__()
         if depth == 18:
@@ -118,6 +158,12 @@ class Unet_resnet(nn.Module):
         self.conv3_0 = self._make_layer(block, nb_filter[3], layers[2], 1)
         self.conv4_0 = self._make_layer(block, nb_filter[4], layers[3], 1)
 
+        self.cbam0 = CBAM(channel=64)
+        self.cbam1 = CBAM(channel=128)
+        self.cbam2 = CBAM(channel=256)
+        self.cbam3 = CBAM(channel=512)
+
+        # decoding
         self.conv3_1 = VGGBlock((nb_filter[3] + nb_filter[4]) * block.expansion, nb_filter[3],
                                 nb_filter[3] * block.expansion)
         self.conv2_1 = VGGBlock((nb_filter[2] + nb_filter[3]) * block.expansion, nb_filter[2],
@@ -142,22 +188,31 @@ class Unet_resnet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, input):
-        x0_0 = self.conv0_0(input) #(3, 3, 512, 512) -> (3,64,512,512)
-        x1_0 = self.conv1_0(self.pool(x0_0)) #(3, 64, 512, 512) -> (3,128,256,256)
-        x2_0 = self.conv2_0(self.pool(x1_0)) #(3, 128, 256, 256) -> (3,256,128,128)
-        x3_0 = self.conv3_0(self.pool(x2_0)) #(3, 256, 128, 128) -> (3,512,64,64)
-        x4_0 = self.conv4_0(self.pool(x3_0)) #(3, 512, 64, 64) -> (3,1024,32,32)
+        # encoding path
+        x0_0 = self.conv0_0(input)
+        x0_0 = self.cbam0(x0_0) + x0_0
 
-        x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], 1)) #(3,1024,32,32) -> (3, 512, 64, 64)
-        x2_1 = self.conv2_1(torch.cat([x2_0, self.up(x3_1)], 1)) #(3, 512, 64, 64) -> (3, 256, 128, 128)
-        x1_1 = self.conv1_1(torch.cat([x1_0, self.up(x2_1)], 1)) #(3, 256, 128, 128) -> (3, 128, 256, 256)
-        x0_1 = self.conv0_1(torch.cat([x0_0, self.up(x1_1)], 1)) #(3, 128, 256, 256) -> (3, 64, 512, 512)
+        x1_0 = self.conv1_0(self.pool(x0_0))
+        x1_0 = self.cbam1(x1_0) + x1_0
 
-        output = self.final(x0_1) #(3, 64, 512, 512) -> (3, 3, 512, 512)
+        x2_0 = self.conv2_0(self.pool(x1_0))
+        x2_0 = self.cbam2(x2_0) + x2_0
+
+        x3_0 = self.conv3_0(self.pool(x2_0))
+        x3_0 = self.cbam3(x3_0) + x3_0
+
+        x4_0 = self.conv4_0(self.pool(x3_0))    # bottleneck
+
+        # decoding
+        x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], dim=1))
+        x2_1 = self.conv2_1(torch.cat([x2_0, self.up(x3_1)], dim=1))
+        x1_1 = self.conv1_1(torch.cat([x1_0, self.up(x2_1)], dim=1))
+        x0_1 = self.conv0_1(torch.cat([x0_0, self.up(x1_1)], dim=1))
+
+        output = self.final(x0_1)
         return output
 
 if __name__ == '__main__':
-    net = Unet_resnet(num_classes=2)
-    print(net)
-    x = torch.rand((3, 3, 512, 512))
-    print(net.forward(x).shape)
+    net = Unet_resnet_CBAM(num_classes=2)
+    x = torch.rand((1, 3, 512, 512))
+    print('out:',net(x).shape)

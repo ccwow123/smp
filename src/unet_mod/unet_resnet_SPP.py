@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 import torch.nn as nn
 
@@ -86,7 +88,22 @@ class VGGBlock(nn.Module):  # vgg的block作为resnet的conv
         return out
 
 
-class Unet_resnet(nn.Module):
+class SPPF(nn.Module):
+    def __init__(self,in_c=3):
+        super().__init__()
+        self.maxpool = nn.MaxPool2d(5, 1, padding=2)
+        self.conv = nn.Conv2d(in_c*4, in_c, 1, 1, 0)
+
+    def forward(self, x):
+        o1 = self.maxpool(x)
+        o2 = self.maxpool(o1)
+        o3 = self.maxpool(o2)
+        x = torch.cat([x, o1, o2, o3], dim=1)
+        out = self.conv(x)
+        return out
+
+
+class Unet_resnet_SPPF(nn.Module):
     def __init__(self, input_channels=3,num_classes=2,depth=18):
         super().__init__()
         if depth == 18:
@@ -118,6 +135,12 @@ class Unet_resnet(nn.Module):
         self.conv3_0 = self._make_layer(block, nb_filter[3], layers[2], 1)
         self.conv4_0 = self._make_layer(block, nb_filter[4], layers[3], 1)
 
+        # SPPF
+        self.sppf0 = SPPF(nb_filter[0])
+        self.sppf1 = SPPF(nb_filter[1])
+        self.sppf2 = SPPF(nb_filter[2])
+        self.sppf3 = SPPF(nb_filter[3])
+
         self.conv3_1 = VGGBlock((nb_filter[3] + nb_filter[4]) * block.expansion, nb_filter[3],
                                 nb_filter[3] * block.expansion)
         self.conv2_1 = VGGBlock((nb_filter[2] + nb_filter[3]) * block.expansion, nb_filter[2],
@@ -143,9 +166,13 @@ class Unet_resnet(nn.Module):
 
     def forward(self, input):
         x0_0 = self.conv0_0(input) #(3, 3, 512, 512) -> (3,64,512,512)
+        x0_0 = self.sppf0(x0_0)
         x1_0 = self.conv1_0(self.pool(x0_0)) #(3, 64, 512, 512) -> (3,128,256,256)
+        x1_0 = self.sppf1(x1_0)
         x2_0 = self.conv2_0(self.pool(x1_0)) #(3, 128, 256, 256) -> (3,256,128,128)
+        x2_0 = self.sppf2(x2_0)
         x3_0 = self.conv3_0(self.pool(x2_0)) #(3, 256, 128, 128) -> (3,512,64,64)
+        x3_0 = self.sppf3(x3_0)
         x4_0 = self.conv4_0(self.pool(x3_0)) #(3, 512, 64, 64) -> (3,1024,32,32)
 
         x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], 1)) #(3,1024,32,32) -> (3, 512, 64, 64)
@@ -157,7 +184,6 @@ class Unet_resnet(nn.Module):
         return output
 
 if __name__ == '__main__':
-    net = Unet_resnet(num_classes=2)
-    print(net)
+    net = Unet_resnet_SPPF(num_classes=2)
     x = torch.rand((3, 3, 512, 512))
     print(net.forward(x).shape)

@@ -19,6 +19,9 @@ import yaml
 from thop import profile
 from src.unet_mod.unet_resnet import Unet_resnet
 from src.unet_mod.unet_att import AttU_Net
+from src.unet_mod.unet_resnet_CBAM import Unet_resnet_CBAM
+from src.unet_mod.unet_resnet_SPP import Unet_resnet_SPPF
+
 
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
@@ -73,6 +76,8 @@ class Trainer:
             # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
             'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
             'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
+            'Unet_resnet_CBAM': Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes)),
+            'Unet_resnet_SPPF': Unet_resnet_SPPF(input_channels=3, num_classes=len(self.classes)),
         }
         # 创建模型
         model = models[self.model_name]
@@ -272,7 +277,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_myresnet2.yaml'
+    cfgpath = r'cfg/my_unet/unet_resnet_CBAM.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

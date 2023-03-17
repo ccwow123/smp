@@ -1,4 +1,4 @@
-model_name : 'Unet_resnet'
+model_name : 'Unet_resnet_CBAM'
 encoder : 50
 encoder_weights :
 classes : ['_background_', 'abnormal']
