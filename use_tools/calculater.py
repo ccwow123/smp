@@ -7,13 +7,12 @@ from thop import profile
 import yaml
 from torchsummary import summary
 import segmentation_models_pytorch as smp
-from src.unet.unet_modification import UnetRes,UnetRes_DSC
 # 整体参数量 + 计算量
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
     # dummy_input = torch.randn(1, 3, 224, 224)
     dummy_input = torch.randn(1, *input_size).cuda()
-    flops, params = profile(model, (dummy_input,))
+    flops, params = profile(model.cuda(), (dummy_input,))
     print('flops: %.2fG' % (flops / 1e9))
     print('params: %.2fM' % (params / 1e6))
 # 每层参数量 + 整体参数量 + 可训参数量

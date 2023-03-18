@@ -19,10 +19,7 @@ import yaml
 from thop import profile
 from src.unet_mod.unet_resnet import Unet_resnet
 from src.unet_mod.unet_att import AttU_Net
-from src.unet_mod.unet_resnet_CBAM import Unet_resnet_CBAM
-from src.unet_mod.unet_resnet_SPP import Unet_resnet_SPPF
-from src.unet_mod.unet_resnet_RFB import Unet_resnet_RFB
-
+from src.unet_mod.unet_resnet_Pyramid import Unet_resnet_CBAM,Unet_resnet_SPPF,Unet_resnet_RFB,Unet_resnet_SPPCSPC
 
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
@@ -70,6 +67,7 @@ class Trainer:
         # 实例化wandb
         # config = {'data-path': self.args.data_path, 'batch-size': self.args.batch_size}
         # self.wandb = wandb.init(project='newproject',name='每次改一下名称', config=config, dir=log_dir)
+        print("当前进行训练: {}".format(log_dir))
         return log_dir
 
     def _create_model(self):
@@ -80,6 +78,7 @@ class Trainer:
             'Unet_resnet_CBAM': Unet_resnet_CBAM,
             'Unet_resnet_SPPF': Unet_resnet_SPPF,
             'Unet_resnet_RFB': Unet_resnet_RFB,
+            'Unet_resnet_SPPCSPC': Unet_resnet_SPPCSPC,
         }
         # 创建模型
         model = models[self.model_name](input_channels=3, num_classes=len(self.classes))
@@ -256,8 +255,8 @@ def parse_args(cfgpath):
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")
+    parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
     parser.add_argument("--epochs", default=1, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
@@ -279,7 +278,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_resnet_SPPF.yaml'
+    cfgpath = r'cfg/my_unet/Unet_resnet_SPPCSPC.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
