@@ -21,6 +21,7 @@ from src.unet_mod.unet_resnet import Unet_resnet
 from src.unet_mod.unet_att import AttU_Net
 from src.unet_mod.unet_resnet_CBAM import Unet_resnet_CBAM
 from src.unet_mod.unet_resnet_SPP import Unet_resnet_SPPF
+from src.unet_mod.unet_resnet_RFB import Unet_resnet_RFB
 
 
 def calculater_1(model, input_size=(3, 512, 512)):
@@ -74,13 +75,14 @@ class Trainer:
     def _create_model(self):
         models = {
             # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
-            'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
-            'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
-            'Unet_resnet_CBAM': Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_SPPF': Unet_resnet_SPPF(input_channels=3, num_classes=len(self.classes)),
+            # 'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
+            'Unet_resnet': Unet_resnet,
+            'Unet_resnet_CBAM': Unet_resnet_CBAM,
+            'Unet_resnet_SPPF': Unet_resnet_SPPF,
+            'Unet_resnet_RFB': Unet_resnet_RFB,
         }
         # 创建模型
-        model = models[self.model_name]
+        model = models[self.model_name](input_channels=3, num_classes=len(self.classes))
         # if self.model_name == 'UResnet':
         #     model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
         # elif self.model_name == 'unet_mod':
@@ -277,7 +279,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_resnet_CBAM.yaml'
+    cfgpath = r'cfg/my_unet/unet_resnet_SPPF.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
