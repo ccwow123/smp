@@ -71,27 +71,27 @@ class Trainer:
         return log_dir
 
     def _create_model(self):
-        models = {
-            # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
-            # 'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
-            'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_CBAM': Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_SPPF': Unet_resnet_SPPF(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_RFB': Unet_resnet_RFB(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_SPPCSPC': Unet_resnet_SPPCSPC(input_channels=3, num_classes=len(self.classes)),
-            'Unet_resnet_SPPF_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppf'),
-            'Unet_resnet_CBAM_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='cbam'),
-            'Unet_resnet_RFB_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='rfb'),
-            'Unet_resnet_SPPCSPC_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppcspc'),
-        }
-        # 创建模型
-        model = models[self.model_name]
-        # if self.model_name == 'UResnet':
-        #     model = UResnet(layers=[2,2,2,2], num_classes=len(self.classes))
-        # elif self.model_name == 'unet_mod':
-        #     model = UnetRes(in_channel=3, out_channel=len(self.classes),depth=self.encoder)
-        # elif self.model_name == 'unet_att':
-        #     model = AttU_Net(in_channel=3, num_classes=len(self.classes))
+        # models = {
+        #     # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
+        #     # 'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
+        #     'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
+        #     'Unet_resnet_CBAM': Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes)),
+        #     'Unet_resnet_SPPF': Unet_resnet_SPPF(input_channels=3, num_classes=len(self.classes)),
+        #     'Unet_resnet_RFB': Unet_resnet_RFB(input_channels=3, num_classes=len(self.classes)),
+        #     'Unet_resnet_SPPCSPC': Unet_resnet_SPPCSPC(input_channels=3, num_classes=len(self.classes)),
+        #     'Unet_resnet_SPPF_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppf'),
+        #     'Unet_resnet_CBAM_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='cbam'),
+        #     'Unet_resnet_RFB_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='rfb'),
+        #     'Unet_resnet_SPPCSPC_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppcspc'),
+        # }
+        if self.model_name == 'unet':
+            model = smp.Unet(encoder_name=self.encoder, encoder_weights=self.encoder_weights, classes=len(self.classes),
+                             activation=self.activation)
+        elif self.model_name == 'Unet_resnet':
+            model = Unet_resnet(input_channels=3, num_classes=len(self.classes),activation=self.activation)
+        elif self.model_name == 'Unet_resnet_CBAM':
+            model = Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes),activation=self.activation)
+
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)

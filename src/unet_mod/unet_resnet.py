@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from segmentation_models_pytorch.base import SegmentationHead
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -87,7 +87,7 @@ class VGGBlock(nn.Module):  # vgg的block作为resnet的conv
 
 
 class Unet_resnet(nn.Module):
-    def __init__(self, input_channels=3,num_classes=2,depth=18):
+    def __init__(self, input_channels=3,num_classes=2,depth=18,activation='sigmoid'):
         super().__init__()
         if depth == 18:
             layers = [2, 2, 2, 2]
@@ -126,7 +126,14 @@ class Unet_resnet(nn.Module):
                                 nb_filter[1] * block.expansion)
         self.conv0_1 = VGGBlock(nb_filter[0] + nb_filter[1] * block.expansion, nb_filter[0], nb_filter[0])
 
-        self.final = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+        # self.final = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+        # 分割头
+        self.segmentation_head = SegmentationHead(
+            in_channels=nb_filter[0],
+            out_channels=num_classes,
+            activation=activation,
+            kernel_size=3,
+        )
 
     def _make_layer(self, block, middle_channel, num_blocks, stride):
         '''
