@@ -245,12 +245,13 @@ class SegmentationMetric(object):
 
     def compute(self):
         output ={
-            'pa': self.pixelAccuracy(),
-            'miou': self.meanIntersectionOverUnion(),
-            'fwiou': self.Frequency_Weighted_Intersection_over_Union(),
-            'cpa': self.classPixelAccuracy(),
-            'mpa': self.meanPixelAccuracy(),
-            'iou': self.IntersectionOverUnion(),
+            'pa': self.pixelAccuracy().to('cpu'),
+            'miou': self.meanIntersectionOverUnion().to('cpu'),
+            'fwiou': self.Frequency_Weighted_Intersection_over_Union().to('cpu'),
+            'cpa': self.classPixelAccuracy().to('cpu'),
+            'mpa': self.meanPixelAccuracy().to('cpu'),
+            'iou': self.IntersectionOverUnion().to('cpu'),
+
         }
         return output
 
@@ -288,7 +289,10 @@ class SegmentationMetric(object):
         IoU = self.IntersectionOverUnion()
         mIoU = IoU[IoU<float('inf')].mean()# 求各类别IoU的平均
         return mIoU
-
+    def recall(self):
+        # recall = TP / (TP + FN)
+        recall = torch.diag(self.confusionMatrix) / torch.sum(self.confusionMatrix, axis=1)
+        return recall
     def genConfusionMatrix(self, imgPredict, imgLabel, ignore_labels):  #
         """
         同FCN中score.py的fast_hist()函数,计算混淆矩阵
