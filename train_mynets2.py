@@ -18,6 +18,7 @@ from tools.mytools import *
 import yaml
 from thop import profile
 from src.unet_mod.unet_resnet import Unet_resnet
+from src.unet_mod.smp_unet_resnet import smp_Unet_resnet
 from src.unet_mod.unet_att import AttU_Net
 from src.unet_mod.unet_resnet_Pyramid import Unet_resnet_CBAM,Unet_resnet_SPPF,Unet_resnet_RFB,Unet_resnet_SPPCSPC,Unet_resnet_bridge
 
@@ -89,8 +90,8 @@ class Trainer:
                              activation=self.activation)
         elif self.model_name == 'Unet_resnet':
             model = Unet_resnet(input_channels=3, num_classes=len(self.classes),activation=self.activation)
-        elif self.model_name == 'Unet_resnet_CBAM':
-            model = Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes),activation=self.activation)
+        elif self.model_name == 'smp_unet_resnet':
+            model = smp_Unet_resnet(input_channels=3, num_classes=len(self.classes),activation=self.activation)
 
         # 是否加载预训练模型
         if self.args.pretrained:
@@ -264,7 +265,7 @@ def parse_args(cfgpath):
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=1, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.0001, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -285,7 +286,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_myresnet2.yaml'
+    cfgpath = r'cfg/my_unet/smp_unet_resnet.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
