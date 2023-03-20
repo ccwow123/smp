@@ -153,8 +153,7 @@ class Trainer:
         lr_scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         return lr_scheduler
     def create_metrics(self):
-        metrics_ = [metrics.IoU(threshold=0.5), metrics.Fscore(beta=1, threshold=0.5),
-                   metrics.Accuracy(threshold=0.5), metrics.Recall(), metrics.Precision()]
+        metrics_ = [metrics.IoU(threshold=0.5), metrics.Fscore(beta=1, threshold=0.5)]
         return metrics_
     def train_one_epoch(self,model,loss,metrics_,optimizer):
         train_epoch = train.TrainEpoch(
@@ -183,8 +182,12 @@ class Trainer:
         # self.tb.add_scalars('val_loss', {}, i)
         # 保存验证过程中的信息
         self.tb.add_scalar('val_loss', log_val['dice_loss'], i)
-        self.tb.add_scalar('g_correct', confmat.acc_global, i)
-        self.tb.add_scalar('miou', confmat.mean_iu, i)
+        self.tb.add_scalar('PA', confmat['pa'], i)
+        self.tb.add_scalar('mPA', confmat['mpa'], i)
+        self.tb.add_scalar('mIoU', confmat['miou'], i)
+        self.tb.add_scalar('fIoU', confmat['fwiou'], i)
+        # self.tb.add_scalar('g_correct', confmat.acc_global, i)
+        # self.tb.add_scalar('miou', confmat.mean_iu, i)
         # 保存学习率
         self.tb.add_scalar('learning rate',optimizer.param_groups[0]['lr'], i)
         # 保存训练过程中的信息
@@ -232,8 +235,8 @@ class Trainer:
                 self.model_size=calculater_1(model,input_size)
             self.save_logs(i, log_train, log_val, confmat, optimizer)
             # 保存最好的模型
-            if max_score < confmat.mean_iu:
-                max_score = confmat.mean_iu
+            if max_score < confmat['pa']:
+                max_score = confmat['pa']
                 # checkpoint = {
                 #     'epoch': i,
                 #     'state_dict': model.state_dict(),
@@ -257,7 +260,7 @@ def parse_args(cfgpath):
     # 主要
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/skew', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
@@ -282,7 +285,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_unet/unet_resnet_CBAM_bridge.yaml'
+    cfgpath = r'cfg/my_unet/unet_myresnet2.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

@@ -160,7 +160,8 @@ class Unet_resnet(nn.Module):
         x1_1 = self.conv1_1(torch.cat([x1_0, self.up(x2_1)], 1)) #(3, 256, 128, 128) -> (3, 128, 256, 256)
         x0_1 = self.conv0_1(torch.cat([x0_0, self.up(x1_1)], 1)) #(3, 128, 256, 256) -> (3, 64, 512, 512)
 
-        output = self.final(x0_1) #(3, 64, 512, 512) -> (3, 3, 512, 512)
+        # output = self.final(x0_1) #(3, 64, 512, 512) -> (3, 3, 512, 512)
+        output = self.segmentation_head(x0_1)
         return output
 
 if __name__ == '__main__':

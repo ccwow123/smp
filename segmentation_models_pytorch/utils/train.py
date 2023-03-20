@@ -121,7 +121,8 @@ class ValidEpoch(Epoch):
         loss_meter = AverageValueMeter()
         metrics_meters = {metric.__name__: AverageValueMeter() for metric in self.metrics}
         # 我的指标
-        confmat = ConfusionMatrix(self.num_classes)
+        # confmat = ConfusionMatrix(self.num_classes)
+        confmat = SegmentationMetric(self.num_classes)
         ###以上是我的指标
         with tqdm(
             dataloader,
@@ -145,7 +146,8 @@ class ValidEpoch(Epoch):
                     metrics_meters[metric_fn.__name__].add(metric_value)
                     # 我的指标
                     confmat.update(y.argmax(1).flatten(), y_pred.argmax(1).flatten())#这里要修夫debug试试
-                confmat.reduce_from_all_processes()
+                    confmat_output = confmat.compute()
+                # confmat.reduce_from_all_processes()
                 ###以上是我的指标
                 metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
                 logs.update(metrics_logs)
@@ -154,4 +156,4 @@ class ValidEpoch(Epoch):
                     s = self._format_logs(logs)
                     iterator.set_postfix_str(s)
 
-        return logs,confmat
+        return logs,confmat_output
