@@ -115,6 +115,23 @@ class CBAM(nn.Module):
         # print(self.spatial_attention(out).shape)
         out = self.spatial_attention(out) * out
         return out
+# SE
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
 
 class UNet_attention(SegmentationModel):
     def __init__(self,
@@ -187,8 +204,84 @@ class UNet_attention(SegmentationModel):
 
         return logits
 
+class UNet_attention_ex(SegmentationModel):
+    def __init__(self,
+                 in_channels: int = 3,
+                 num_classes: int = 2,
+                 bilinear: bool = True,
+                 base_c: int = 64,
+                 activation='sigmoid',
+                 method='cbam'):
+        super().__init__()
+        self.in_channels = in_channels
+        self.num_classes = num_classes
+        self.bilinear = bilinear
+
+        self.in_conv = DoubleConv(in_channels, base_c)
+        self.down1 = Down(base_c, base_c * 2)
+        self.down2 = Down(base_c * 2, base_c * 4)
+        self.down3 = Down(base_c * 4, base_c * 8)
+        factor = 2 if bilinear else 1  # 因为上采样的bilinear方法引入一个系数
+        self.down4 = Down(base_c * 8, base_c * 16 // factor)
+        self.up1 = Up(base_c * 16, base_c * 8 // factor, bilinear)
+        self.up2 = Up(base_c * 8, base_c * 4 // factor, bilinear)
+        self.up3 = Up(base_c * 4, base_c * 2 // factor, bilinear)
+        self.up4 = Up(base_c * 2, base_c, bilinear)
+        self.out_conv = OutConv(base_c, num_classes)
+        if method == 'cbam':
+            self.att0 = CBAM(channel=base_c)
+            self.att1 = CBAM(channel=base_c*2)
+            self.att2 = CBAM(channel=base_c*4)
+            self.att3 = CBAM(channel=base_c*8)
+        elif method == 'se':
+            self.att0 = SELayer(channel=base_c)
+            self.att1 = SELayer(channel=base_c*2)
+            self.att2 = SELayer(channel=base_c*4)
+            self.att3 = SELayer(channel=base_c*8)
+
+        # ----------------#
+        # smp-分割头
+        # ----------------#
+        self.segmentation_head = SegmentationHead(
+            in_channels=base_c,
+            out_channels=num_classes,
+            activation=activation,
+            kernel_size=3,
+        )
+
+        self.classification_head = None
+
+        self.initialize()
+
+    # ----------------#
+    # smp-初始化
+    # ----------------#
+    def initialize(self):
+        # init.initialize_decoder(self.decoder)
+        initialize_head(self.segmentation_head)
+        if self.classification_head is not None:
+            initialize_head(self.classification_head)
+
+    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
+        x1 = self.in_conv(x)
+        x1 = self.att0(x1) + x1
+        x2 = self.down1(x1)
+        x2 = self.att1(x2) + x2
+        x3 = self.down2(x2)
+        x3 = self.att2(x3) + x3
+        x4 = self.down3(x3)
+        x4 = self.att3(x4) + x4
+        x5 = self.down4(x4) # bottleneck
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        # logits = self.out_conv(x)
+        logits = self.segmentation_head(x)
+
+        return logits
 
 if __name__ == "__main__":
-    model = UNet_attention().cuda()
+    model = UNet_attention_ex(method='se').cuda()
     summary(model,(3,480,480))  # 输出网络结构
 
