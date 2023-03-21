@@ -96,6 +96,8 @@ class Trainer:
             model = UNet(3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'unet0_CBAM':
             model = UNet_attention(3, num_classes=len(self.classes),activation=self.activation)
+        elif self.model_name == 'unet0_res':
+            model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
 
         # 是否加载预训练模型
         if self.args.pretrained:
@@ -290,7 +292,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_CBAM.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_res.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

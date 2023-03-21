@@ -245,14 +245,17 @@ class SegmentationMetric(object):
 
     def compute(self):
         output ={
-            'pa': self.pixelAccuracy().to('cpu'),
-            'miou': self.meanIntersectionOverUnion().to('cpu'),
-            'fwiou': self.Frequency_Weighted_Intersection_over_Union().to('cpu'),
-            'cpa': self.classPixelAccuracy().to('cpu'),
-            'mpa': self.meanPixelAccuracy().to('cpu'),
-            'iou': self.IntersectionOverUnion().to('cpu'),
+            'pa': self.pixelAccuracy(),
+            'miou': self.meanIntersectionOverUnion(),
+            'fwiou': self.Frequency_Weighted_Intersection_over_Union(),
+            'cpa': self.classPixelAccuracy(),
+            'mpa': self.meanPixelAccuracy(),
+            'iou': self.IntersectionOverUnion(),
 
         }
+        for key in output.keys():
+            output[key] = output[key].cpu().numpy() * 100
+            output[key] = np.round(output[key], 2)
         return output
 
     def pixelAccuracy(self):
