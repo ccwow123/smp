@@ -3,8 +3,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchsummary import summary
-from .init import *
-# from init import *
+
+from segmentation_models_pytorch.base import (
+    SegmentationModel,
+    SegmentationHead,
+    ClassificationHead,
+)
+from typing import Optional, Union, List
+# ----------------#
+# smp-初始化函数
+# ----------------#
+def initialize_head(module):
+    for m in module.modules():
+        if isinstance(m, (nn.Linear, nn.Conv2d)):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
 class DoubleConv(nn.Sequential):
     def __init__(self, in_channels, out_channels, mid_channels=None):
         if mid_channels is None:
