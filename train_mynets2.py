@@ -17,11 +17,12 @@ from tools.datasets_VOC import Dataset_Train
 from tools.mytools import *
 import yaml
 from thop import profile
-from src.unet_mod.unet_resnet import Unet_resnet
-from src.unet_mod.smp_unet_resnet import smp_Unet_resnet
-from src.unet_mod.smp_unet import UNet
-from src.unet_mod.unet_att import AttU_Net
-from src.unet_mod.unet_resnet_Pyramid import Unet_resnet_CBAM,Unet_resnet_SPPF,Unet_resnet_RFB,Unet_resnet_SPPCSPC,Unet_resnet_bridge
+from src.unet_mod import *
+# from src.unet_mod.unet_resnet import Unet_resnet
+# from src.unet_mod.smp_unet_resnet import smp_Unet_resnet
+# from src.unet_mod.smp_unet import UNet
+# from src.unet_mod.unet_att import AttU_Net
+
 
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
@@ -89,12 +90,12 @@ class Trainer:
         if self.model_name == 'unet':
             model = smp.Unet(encoder_name=self.encoder, encoder_weights=self.encoder_weights, classes=len(self.classes),
                              activation=self.activation)
-        elif self.model_name == 'Unet_resnet':
-            model = Unet_resnet(input_channels=3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'smp_unet_resnet':
             model = smp_Unet_resnet(input_channels=3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'unet0':
             model = UNet(3, num_classes=len(self.classes),activation=self.activation)
+        elif self.model_name == 'unet0_CBAM':
+            model = UNet_attention(3, num_classes=len(self.classes),activation=self.activation)
 
         # 是否加载预训练模型
         if self.args.pretrained:
@@ -289,7 +290,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_CBAM.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
