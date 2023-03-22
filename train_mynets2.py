@@ -98,6 +98,8 @@ class Trainer:
             model = UNet_attention_ex(3, num_classes=len(self.classes),activation=self.activation,method='cbam')
         elif self.model_name == 'unet0_SE':
             model = UNet_attention_ex(3, num_classes=len(self.classes),activation=self.activation,method='se')
+        elif self.model_name == 'unet0_SA':
+            model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='sa')
         elif self.model_name == 'unet0_res':
             model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
 
@@ -294,7 +296,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_SE.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_SA.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
