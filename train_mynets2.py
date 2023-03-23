@@ -89,8 +89,12 @@ class Trainer:
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='sa')
         elif self.model_name == 'unet0_CA':
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='ca')
+        elif self.model_name == 'unet0_SOCA':
+            model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='soca')
         elif self.model_name == 'unet0_res':
             model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
+
+
 
         # 是否加载预训练模型
         if self.args.pretrained:
@@ -285,7 +289,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_CA.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_SOCA.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

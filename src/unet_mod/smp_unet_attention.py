@@ -10,6 +10,7 @@ from segmentation_models_pytorch.base import (
     ClassificationHead,
 )
 from typing import Optional, Union, List
+from src.unet_mod.SOCA import SOCA
 # ----------------#
 # smp-初始化函数
 # ----------------#
@@ -346,6 +347,11 @@ class UNet_attention_ex(SegmentationModel):
             self.att1 = CoordAtt(base_c*2,base_c*2)
             self.att2 = CoordAtt(base_c*4,base_c*4)
             self.att3 = CoordAtt(base_c*8,base_c*8)
+        elif method == 'soca':
+            self.att0 = SOCA(base_c)
+            self.att1 = SOCA(base_c*2)
+            self.att2 = SOCA(base_c*4)
+            self.att3 = SOCA(base_c*8)
 
 
         # ----------------#
@@ -391,6 +397,7 @@ class UNet_attention_ex(SegmentationModel):
         return logits
 
 if __name__ == "__main__":
-    model = UNet_attention_ex(method='ca').cuda()
-    summary(model,(3,256,256))  # 输出网络结构
+    model = UNet_attention_ex(method='soca').cuda()
+    summary(model,(3,32,32))  # 输出网络结构
+    # summary(model,(3,256,256))  # 输出网络结构
 
