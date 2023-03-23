@@ -74,19 +74,6 @@ class Trainer:
         return log_dir
 
     def _create_model(self):
-        # models = {
-        #     # 'unet': smp.Unet(encoder_name=self.encoder,encoder_weights=self.encoder_weights,classes=len(self.classes),activation=self.activation ),
-        #     # 'unet_att': AttU_Net(in_channel=3, num_classes=len(self.classes)),
-        #     'Unet_resnet': Unet_resnet(input_channels=3, num_classes=len(self.classes)),
-        #     'Unet_resnet_CBAM': Unet_resnet_CBAM(input_channels=3, num_classes=len(self.classes)),
-        #     'Unet_resnet_SPPF': Unet_resnet_SPPF(input_channels=3, num_classes=len(self.classes)),
-        #     'Unet_resnet_RFB': Unet_resnet_RFB(input_channels=3, num_classes=len(self.classes)),
-        #     'Unet_resnet_SPPCSPC': Unet_resnet_SPPCSPC(input_channels=3, num_classes=len(self.classes)),
-        #     'Unet_resnet_SPPF_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppf'),
-        #     'Unet_resnet_CBAM_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='cbam'),
-        #     'Unet_resnet_RFB_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='rfb'),
-        #     'Unet_resnet_SPPCSPC_bridge': Unet_resnet_bridge(input_channels=3, num_classes=len(self.classes),bridge='sppcspc'),
-        # }
         if self.model_name == 'unet':
             model = smp.Unet(encoder_name=self.encoder, encoder_weights=self.encoder_weights, classes=len(self.classes),
                              activation=self.activation)
@@ -100,6 +87,8 @@ class Trainer:
             model = UNet_attention_ex(3, num_classes=len(self.classes),activation=self.activation,method='se')
         elif self.model_name == 'unet0_SA':
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='sa')
+        elif self.model_name == 'unet0_CA':
+            model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='ca')
         elif self.model_name == 'unet0_res':
             model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
 
@@ -296,7 +285,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_SA.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_CA.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
