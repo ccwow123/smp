@@ -106,7 +106,7 @@ class Trainer:
     def _load_pretrained_model(self, model):
         #这里看权重文件的格式，如果是字典的话就用load_state_dict，如果是模型的话就用load_model
         checkpoint = torch.load(os.path.join(self.args.pretrained, 'best_model.pth'))
-        model.load_state_dict(checkpoint)
+        model.load_state_dict(checkpoint, strict=False)
         print("Loaded pretrained model '{}'".format(self.args.pretrained))
         return model
     # 加载数据集
@@ -226,6 +226,7 @@ class Trainer:
         # 训练模型
         max_score = 0
         start_time = time.time()
+        optimizer.zero_grad()
         for i in range(1, self.args.epochs+1):
             print('\nEpoch: {}'.format(i))
             # 训练模型
@@ -249,7 +250,7 @@ class Trainer:
                 #     'optimizer': optimizer.state_dict()
                 # }
                 # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
-                torch.save(model,os.path.join(self.log_dir,'best_model.pth'))
+                torch.save(model.state_dict(),os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
             # 保存网络结构
             self.tb.add_graph(model, torch.rand(1, 3, 512, 512).to(self.device))
@@ -273,7 +274,7 @@ def parse_args(cfgpath):
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.00001, type=float, help='初始学习率')
-    parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
+    parser.add_argument("--pretrained", default=r"D:\Files\_Weights\unet_mod\03-20 21_04_57-unet0_None\out", type=str, help="权重位置的路径")
 
     # 暂无
 
@@ -291,7 +292,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_shuffle.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
