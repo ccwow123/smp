@@ -98,6 +98,8 @@ class Trainer:
 
 
 
+
+
         # 是否加载预训练模型
         if self.args.pretrained:
             model = self._load_pretrained_model(model)
@@ -152,7 +154,12 @@ class Trainer:
     # 建立优化器和损失函数
     def create_optimizer(self,model):
         loss = losses.DiceLoss()
-        optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=self.args.lr), ])
+        params_to_optimize = [p for p in model.parameters() if p.requires_grad]
+        if self.args.optimizer == 'Adam':
+            optimizer = torch.optim.Adam(params_to_optimize, lr=self.args.lr, weight_decay=0.0005)
+            # optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=self.args.lr), ])
+        elif self.args.optimizer == 'SGD':
+            optimizer = torch.optim.SGD(params_to_optimize, lr=self.args.lr, momentum=self.args.momentum, weight_decay=self.args.weight_decay)
         return loss,optimizer
     # 建立学习率调整策略
     def create_lr_scheduler(self,optimizer):
@@ -199,7 +206,7 @@ class Trainer:
         # 保存训练过程中的信息
         val_info = str(confmat)
         print(val_info)
-        with open(self.results_file, "a") as f:
+        with open(self.results_file, "a",encoding='utf-8') as f:
             f.write("Epoch: {} - \n".format(i))
             f.write("Train: {} - \n".format(log_train))
             f.write("Valid: {} - \n".format(log_val))
@@ -267,24 +274,18 @@ def parse_args(cfgpath):
     # 主要
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
+    parser.add_argument("--batch-size", default=4, type=int, help="分块大小")
+    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[240, 240], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=100, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
-    parser.add_argument('--lr', default=0.00001, type=float, help='初始学习率')
+    parser.add_argument('--lr', default=1e-4, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
-
-    # 暂无
-
-    parser.add_argument('--resume', default=r"", help='继续训练的权重位置的路径')
+    parser.add_argument('--optimizer', default='SGD', type=str, choices=['SGD', 'Adam'], help='优化器')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='动量')
-    parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
+    parser.add_argument('--weight-decay', default=1e-4, type=float,
                         metavar='W', help='权重衰减', dest='weight_decay')
-    parser.add_argument('--optimizer', default='SGD', type=str, choices=['SGD', 'Adam', 'AdamW'], help='优化器')
-    # 其他
-    parser.add_argument('--open-tb', default=False, type=bool, help='使用tensorboard保存网络结构')
 
     args = parser.parse_args()
 
@@ -292,7 +293,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_SE.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

@@ -255,7 +255,7 @@ class SegmentationMetric(object):
         }
         for key in output.keys():
             output[key] = output[key].cpu().numpy() * 100
-            output[key] = np.round(output[key], 2)
+            output[key] = np.round(output[key], 4)
         return output
 
     def pixelAccuracy(self):
