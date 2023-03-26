@@ -154,7 +154,7 @@ class UNet(SegmentationModel):
         self.classification_head = None
 
         self.initialize()
-
+        self.initialize_weights()
     # ----------------#
     # smp-初始化
     # ----------------#
@@ -163,7 +163,21 @@ class UNet(SegmentationModel):
         initialize_head(self.segmentation_head)
         if self.classification_head is not None:
             initialize_head(self.classification_head)
-
+    def initialize_weights(self):
+        for m in self.modules():
+            # 判断是否属于Conv2d
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.xavier_normal_(m.weight.data)
+                # 判断是否有偏置
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias.data, 0.3)
+            elif isinstance(m, nn.Linear):
+                torch.nn.init.normal_(m.weight.data, 0.1)
+                if m.bias is not None:
+                    torch.nn.init.zeros_(m.bias.data)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.fill_(0)
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         x1 = self.in_conv(x)
         x2 = self.down1(x1)

@@ -232,6 +232,7 @@ class smp_Unet_resnet(SegmentationModel):
             self.classification_head = None
 
         self.initialize()
+        self.initialize_weights()
     # ----------------#
     # smp-初始化
     # ----------------#
@@ -240,6 +241,21 @@ class smp_Unet_resnet(SegmentationModel):
         initialize_head(self.segmentation_head)
         if self.classification_head is not None:
             initialize_head(self.classification_head)
+    def initialize_weights(self):
+        for m in self.modules():
+            # 判断是否属于Conv2d
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.xavier_normal_(m.weight.data)
+                # 判断是否有偏置
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias.data, 0.3)
+            elif isinstance(m, nn.Linear):
+                torch.nn.init.normal_(m.weight.data, 0.1)
+                if m.bias is not None:
+                    torch.nn.init.zeros_(m.bias.data)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.fill_(0)
     def _make_layer(self, block, middle_channel, num_blocks, stride):
         '''
         middle_channels中间维度，实际输出channels = middle_channels * block.expansion

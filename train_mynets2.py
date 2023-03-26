@@ -274,7 +274,7 @@ def parse_args(cfgpath):
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=0.00001, type=float, help='初始学习率')
-    parser.add_argument("--pretrained", default=r"D:\Files\_Weights\unet_mod\03-20 21_04_57-unet0_None\out", type=str, help="权重位置的路径")
+    parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
 
     # 暂无
 
@@ -292,7 +292,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_SE.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
