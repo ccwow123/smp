@@ -25,16 +25,18 @@ def my_job(jobs):
         print('-'*100,'现在执行：',key,'-'*100)
         loop(jobs[key])
         sleep(5)
+        loop(jobs[key])
+        sleep(5)
 if __name__ == '__main__':
     path = r'cfg/my_new_unet/'
     jobs ={
-        "unet0.yaml": '',
-        "unet0_CA.yaml":'',
-        'unet0_CBAM.yaml':'',
-        'unet0_res.yaml':'',
-        'unet0_SA.yaml':'',
-        'unet0_SE.yaml':'',
-        'unet0_shuffle.yaml':'',
+        "unet0_Simam.yaml": '',
+        "unet0_SOCA.yaml":'',
+        # 'unet0_CBAM.yaml':'',
+        # 'unet0_res.yaml':'',
+        # 'unet0_SA.yaml':'',
+        # 'unet0_SE.yaml':'',
+        # 'unet0_shuffle.yaml':'',
     }
     for key in jobs:
         jobs[key] = path + key

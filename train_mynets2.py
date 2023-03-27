@@ -95,6 +95,8 @@ class Trainer:
             model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'unet0_shuffle':
             model = ShuffleUNet(3, num_classes=len(self.classes),activation=self.activation)
+        elif self.model_name == 'unet0_Simam':
+            model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='simam')
 
 
 
@@ -275,14 +277,14 @@ def parse_args(cfgpath):
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
     parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
-    parser.add_argument("--batch-size", default=4, type=int, help="分块大小")
+    parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
     parser.add_argument("--crop-size", default=[240, 240], type=int, help="图片裁剪大小")
     parser.add_argument("--epochs", default=100, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=1e-4, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
-    parser.add_argument('--optimizer', default='SGD', type=str, choices=['SGD', 'Adam'], help='优化器')
+    parser.add_argument('--optimizer', default='Adam', type=str, choices=['SGD', 'Adam'], help='优化器')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='动量')
     parser.add_argument('--weight-decay', default=1e-4, type=float,
                         metavar='W', help='权重衰减', dest='weight_decay')
@@ -293,7 +295,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0.yaml'
+    cfgpath = r'cfg/my_new_unet/unet0_SOCA.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)

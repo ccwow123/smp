@@ -199,7 +199,6 @@ class h_swish(nn.Module):
         self.sigmoid = h_sigmoid(inplace=inplace)
     def forward(self, x):
         return x * self.sigmoid(x)
-
 class CoordAtt(nn.Module):
     def __init__(self, inp, oup, reduction=32):
         super(CoordAtt, self).__init__()
@@ -230,6 +229,32 @@ class CoordAtt(nn.Module):
         a_w = self.conv_w(x_w).sigmoid()
         out = identity * a_w * a_h
         return out
+# SimAM
+class SimAM(torch.nn.Module):
+    def __init__(self, channels=None, e_lambda=1e-4):
+        super(SimAM, self).__init__()
+
+        self.activaton = nn.Sigmoid()
+        self.e_lambda = e_lambda
+
+    def __repr__(self):
+        s = self.__class__.__name__ + '('
+        s += ('lambda=%f)' % self.e_lambda)
+        return s
+
+    @staticmethod
+    def get_module_name():
+        return "simam"
+
+    def forward(self, x):
+        b, c, h, w = x.size()
+
+        n = w * h - 1
+
+        x_minus_mu_square = (x - x.mean(dim=[2, 3], keepdim=True)).pow(2)
+        y = x_minus_mu_square / (4 * (x_minus_mu_square.sum(dim=[2, 3], keepdim=True) / n + self.e_lambda)) + 0.5
+
+        return x * self.activaton(y)
 
 
 class UNet_attention(SegmentationModel):
@@ -348,10 +373,15 @@ class UNet_attention_ex(SegmentationModel):
             self.att2 = CoordAtt(base_c*4,base_c*4)
             self.att3 = CoordAtt(base_c*8,base_c*8)
         elif method == 'soca':
-            self.att0 = SOCA(base_c)
-            self.att1 = SOCA(base_c*2)
-            self.att2 = SOCA(base_c*4)
+            self.att0 = nn.Sequential()
+            self.att1 = nn.Sequential()
+            self.att2 = nn.Sequential()
             self.att3 = SOCA(base_c*8)
+        elif method == 'simam':
+            self.att0 = SimAM(base_c)
+            self.att1 = SimAM(base_c*2)
+            self.att2 = SimAM(base_c*4)
+            self.att3 = SimAM(base_c*8)
 
 
         # ----------------#
