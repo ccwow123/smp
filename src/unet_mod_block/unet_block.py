@@ -55,6 +55,37 @@ class Up_Con(nn.Module):
         return x
 
 # ----------------------------------------
+#                  resnet block
+# ----------------------------------------
+class BasicBlock(nn.Module):
+    expansion = 1
+    '''
+    expansion通道扩充比例
+    out_channels就是输出的channel
+    '''
+
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+
+        self.residual_function = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels * BasicBlock.expansion, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(out_channels * BasicBlock.expansion)
+        )
+
+        self.shortcut = nn.Sequential()
+
+        if stride != 1 or in_channels != BasicBlock.expansion * out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels * BasicBlock.expansion)
+            )
+
+    def forward(self, x):
+        return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
+# ----------------------------------------
 #                  myunet原版
 # ----------------------------------------
 class MyUnet(SegmentationModel):
@@ -164,12 +195,12 @@ class MyUnet_EX(SegmentationModel):
             self.conv1_1 = DoubleConv(base_c * 4, base_c * 2)
             self.up0_1 = Up_Con(base_c * 2, base_c)
             self.conv0_1 = DoubleConv(base_c * 2, base_c)
-        elif block_type == 'resnest':
+        elif block_type == 'resnet':
             self.conv0_0 = DoubleConv(in_channels, base_c)
-            self.conv1_0 = Bottleneck(base_c, base_c * 2)
-            self.conv2_0 = Bottleneck(base_c * 2, base_c * 4)
-            self.conv3_0 = Bottleneck(base_c * 4, base_c * 8)
-            self.conv4_0 = Bottleneck(base_c * 8, base_c * 16)
+            self.conv1_0 = DoubleConv(base_c, base_c * 2)
+            self.conv2_0 = BasicBlock(base_c * 2, base_c * 4)
+            self.conv3_0 = BasicBlock(base_c * 4, base_c * 8)
+            self.conv4_0 = BasicBlock(base_c * 8, base_c * 16)
 
             self.up3_1 = Up_Con(base_c * 16, base_c * 8)
             self.conv3_1 = DoubleConv(base_c * 16, base_c * 8)
@@ -179,6 +210,8 @@ class MyUnet_EX(SegmentationModel):
             self.conv1_1 = DoubleConv(base_c * 4, base_c * 2)
             self.up0_1 = Up_Con(base_c * 2, base_c)
             self.conv0_1 = DoubleConv(base_c * 2, base_c)
+        else:
+            raise NotImplementedError
 
 
         # ----------------#
@@ -235,6 +268,6 @@ class MyUnet_EX(SegmentationModel):
 
         return logits
 if __name__ == "__main__":
-    model = MyUnet_EX(block_type='resnest').cuda()
+    model = MyUnet_EX(block_type='resnet').cuda()
     # model = ResUNet().cuda()
     summary(model,(3,256,256))  # 输出网络结构
