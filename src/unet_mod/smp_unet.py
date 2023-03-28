@@ -21,7 +21,7 @@ def initialize_head(module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-
+# 原版
 class DoubleConv(nn.Sequential):
     def __init__(self, in_channels, out_channels, mid_channels=None):
         if mid_channels is None:
@@ -34,34 +34,12 @@ class DoubleConv(nn.Sequential):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
-class ResDoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels, mid_channels=None):
-        if mid_channels is None:
-            mid_channels = out_channels
-        super().__init__()
-        self.conv = nn.Sequential(nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True))
-        self.shortcut = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False))
-    def forward(self, x):
-        return self.conv(x) + self.shortcut(x)
-
 class Down(nn.Sequential):
     def __init__(self, in_channels, out_channels):
         super(Down, self).__init__(
             nn.MaxPool2d(2, stride=2),
             DoubleConv(in_channels, out_channels)
         )
-class ResDown(nn.Sequential):
-    def __init__(self, in_channels, out_channels):
-        super().__init__(
-            nn.MaxPool2d(2, stride=2),
-            ResDoubleConv(in_channels, out_channels)
-        )
-
 class Up(nn.Module):
     def __init__(self, in_channels, out_channels, bilinear=True):
         super(Up, self).__init__()
@@ -85,7 +63,27 @@ class Up(nn.Module):
         x = torch.cat([x2, x1], dim=1)
         x = self.conv(x)
         return x
-
+# resnet版
+class ResDoubleConv(nn.Module):
+    def __init__(self, in_channels, out_channels, mid_channels=None):
+        if mid_channels is None:
+            mid_channels = out_channels
+        super().__init__()
+        self.conv = nn.Sequential(nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True))
+        self.shortcut = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False))
+    def forward(self, x):
+        return self.conv(x) + self.shortcut(x)
+class ResDown(nn.Sequential):
+    def __init__(self, in_channels, out_channels):
+        super().__init__(
+            nn.MaxPool2d(2, stride=2),
+            ResDoubleConv(in_channels, out_channels)
+        )
 class ResUp(nn.Module):
     def __init__(self, in_channels, out_channels, bilinear=True):
         super().__init__()
@@ -110,12 +108,13 @@ class ResUp(nn.Module):
         x = self.conv(x)
         return x
 
+
+# 原版输出
 class OutConv(nn.Sequential):
     def __init__(self, in_channels, num_classes):
         super(OutConv, self).__init__(
             nn.Conv2d(in_channels, num_classes, kernel_size=1)
         )
-
 
 class UNet(SegmentationModel):
     def __init__(self,
