@@ -18,10 +18,7 @@ from tools.mytools import *
 import yaml
 from thop import profile
 from src.unet_mod import *
-# from src.unet_mod.unet_resnet import Unet_resnet
-# from src.unet_mod.smp_unet_resnet import smp_Unet_resnet
-# from src.unet_mod.smp_unet import UNet
-# from src.unet_mod.unet_att import AttU_Net
+from src.unet_mod_block import *
 
 
 def calculater_1(model, input_size=(3, 512, 512)):
@@ -97,6 +94,9 @@ class Trainer:
             model = ShuffleUNet(3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'unet0_Simam':
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='simam')
+
+        elif self.model_name == 'MyUnet':
+            model = MyUnet(3, num_classes=len(self.classes),activation=self.activation)
 
 
 
@@ -276,11 +276,11 @@ def parse_args(cfgpath):
     # 主要
     parser.add_argument("--model", default=cfgpath,
                         type=str, help="选择模型,查看cfg文件夹")
-    parser.add_argument("--data-path", default=r'data/multi/data', help="VOCdevkit 路径")
+    parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
-    parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[240, 240], type=int, help="图片裁剪大小")
-    parser.add_argument("--epochs", default=100, type=int, metavar="N", help="训练轮数")
+    parser.add_argument("--base-size", default=[64, 64], type=int, help="图片缩放大小")
+    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
+    parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=1e-4, type=float, help='初始学习率')
     parser.add_argument("--pretrained", default=r"", type=str, help="权重位置的路径")
@@ -295,7 +295,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_unet/unet0_SOCA.yaml'
+    cfgpath = r'cfg/my_new_block/unet.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
