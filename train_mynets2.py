@@ -61,7 +61,8 @@ class Trainer:
         log_dir = os.path.join("logs", time_str + self.model_name+'_'+str(self.encoder))
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
-        self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
+        self.results_file = os.path.join(log_dir, "results.txt")
+        # self.results_file = log_dir + "/{}_results{}.txt".format(self.model_name, time_str)
         # 实例化tensborad
         self.tb = SummaryWriter(log_dir=log_dir)
         # 实例化wandb
