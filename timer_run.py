@@ -20,27 +20,22 @@ def loop(cfg_path):
     trainer.run()
     torch.cuda.empty_cache()
 # 执行多个train
-def my_job(jobs):
-    for key in jobs:
-        print('-'*100,'现在执行：',key,'-'*100)
-        loop(jobs[key])
-        sleep(5)
-        loop(jobs[key])
-        sleep(5)
+def my_job(jobs,repeat=1):
+    for i in range(repeat):
+        for key in jobs:
+            print('-' * 100, '现在执行：', key, '-' * 100)
+            loop(jobs[key])
+            sleep(5)
 if __name__ == '__main__':
-    path = r'cfg/my_new_unet/'
+    path = r'cfg/my_new_block/'
+    repeat = 5 #重复次数
     jobs ={
-        "unet0_Simam.yaml": '',
-        "unet0_SOCA.yaml":'',
-        # 'unet0_CBAM.yaml':'',
-        # 'unet0_res.yaml':'',
-        # 'unet0_SA.yaml':'',
-        # 'unet0_SE.yaml':'',
-        # 'unet0_shuffle.yaml':'',
+        "unet.yaml": '',
+
     }
     for key in jobs:
         jobs[key] = path + key
-    Timer(set_timer(sec=1),my_job,(jobs,)).start()
+    Timer(set_timer(sec=1),my_job,(jobs,repeat)).start()
 
 
     # cfg_path1 = r'cfg/my_new_unet/unet0.yaml'
