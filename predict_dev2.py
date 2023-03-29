@@ -20,7 +20,8 @@ from tools.img_process import contours_process
 import imageio
 import yaml
 import json
-
+from src.unet_mod import *
+from src.unet_mod_block import *
 # 图像分割结果的可视化展示
 def visualize(**images):
     """PLot images in one row."""
@@ -98,8 +99,17 @@ class Detecter():
     # 创建模型
     def create_model(self):
         # create segmentation model with pretrained encoder
-        best_model = torch.load(self.args.weight)
+        if self.model_name == 'MyUnet':
+            model = MyUnet(3, num_classes=len(self.classes), activation=self.activation)
+            best_model = self._load_pretrained_model(model)
+            # best_model = torch.load(self.args.weight)
         return best_model
+    def _load_pretrained_model(self, model):
+        #这里看权重文件的格式，如果是字典的话就用load_state_dict，如果是模型的话就用load_model
+        checkpoint = torch.load(os.path.join(self.args.weight, 'best_model.pth'))
+        model.load_state_dict(checkpoint, strict=False)
+        print("Loaded pretrained model '{}'".format(self.args.weight))
+        return model
     def _warming_model(self, best_model, i, image):
         if i == 0:
             height, weight = image.shape[1], image.shape[2]
@@ -120,7 +130,7 @@ class Detecter():
         # 创建模型
         model = self.create_model()
         # 模型推理
-        model.eval()
+        model.cuda().eval()
         for i in range(len(predict_dataset)):
             image,image_name = predict_dataset[i],predict_dataset.ids[i]
             # 原图大小
@@ -166,8 +176,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="预测")
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/multi/data/test', help='test image dir')
-    parser.add_argument('--model', type=str, default=r'cfg/unet/ResNet/unet_cap_multi_res152.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'logs/old/03-05 13_22_51-unet/best_model.pth', help='pretrained model')
+    parser.add_argument('--model', type=str, default=r'cfg/my_new_block/unet.yaml', help='model name')
+    parser.add_argument('--weight', type=str, default=r'D:\hjj\smp\logs\03-28 23_13_31-MyUnet_', help='pretrained model')
     parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
