@@ -11,6 +11,8 @@ from segmentation_models_pytorch.base import (
     ClassificationHead,
 )
 from thop import profile
+from src.unet_mod_block.ResNeSt import Bottleneck
+
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
     # dummy_input = torch.randn(1, 3, 224, 224)
@@ -50,12 +52,6 @@ class conv_block(nn.Module):
         x = self.conv(x)
         return x
 
-class Down(nn.Sequential):
-    def __init__(self, in_channels, out_channels):
-        super(Down, self).__init__(
-            nn.MaxPool2d(2, stride=2),
-            conv_block(in_channels, out_channels)
-        )
 class up_conv(nn.Module):
     """
     Up Convolution Block
@@ -125,33 +121,31 @@ class MyUnet(nn.Module):
         super().__init__()
         #          32, 64, 128, 256, 512
         filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
+        # 编码器
+        self.Maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.Conv1 = conv_block(in_ch, filters[0])
         if block_type=='unet':
-            self.Maxpool = nn.Sequential()
-            self.Conv1 = conv_block(in_ch, filters[0])
-            self.Conv2 = Down(filters[0], filters[1])
-            self.Conv3 = Down(filters[1], filters[2])
-            self.Conv4 = Down(filters[2], filters[3])
-            self.Conv5 = Down(filters[3], filters[4])
-
-            self.Up5 = up_conv(filters[4], filters[3])
-            self.Up4 = up_conv(filters[3], filters[2])
-            self.Up3 = up_conv(filters[2], filters[1])
-            self.Up2 = up_conv(filters[1], filters[0])
+            self.Conv2 = conv_block(filters[0], filters[1])
+            self.Conv3 = conv_block(filters[1], filters[2])
+            self.Conv4 = conv_block(filters[2], filters[3])
+            self.Conv5 = conv_block(filters[3], filters[4])
         elif block_type=='resnet':
-            self.Maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
-
-            self.Conv1 = conv_block(in_ch, filters[0])
             self.Conv2 = BasicBlock(filters[0], filters[1])
             self.Conv3 = BasicBlock(filters[1], filters[2])
             self.Conv4 = BasicBlock(filters[2], filters[3])
             self.Conv5 = BasicBlock(filters[3], filters[4])
-
-            self.Up5 = up_conv(filters[4], filters[3])
-            self.Up4 = up_conv(filters[3], filters[2])
-            self.Up3 = up_conv(filters[2], filters[1])
-            self.Up2 = up_conv(filters[1], filters[0])
+        elif block_type == 'resnest':
+            self.Conv2 = Bottleneck(filters[0], filters[1])
+            self.Conv3 = Bottleneck(filters[1], filters[2])
+            self.Conv4 = Bottleneck(filters[2], filters[3])
+            self.Conv5 = Bottleneck(filters[3], filters[4])
         else:
             raise NotImplementedError('block_type 不存在')
+        # 解码器
+        self.Up5 = up_conv(filters[4], filters[3])
+        self.Up4 = up_conv(filters[3], filters[2])
+        self.Up3 = up_conv(filters[2], filters[1])
+        self.Up2 = up_conv(filters[1], filters[0])
         # self.Conv = nn.Conv2d(filters[0], out_ch, kernel_size=1, stride=1, padding=0)
         # self.active = torch.nn.Sigmoid()
         # ----------------#
@@ -201,7 +195,7 @@ class MyUnet(nn.Module):
 
 
 if __name__ == "__main__":
-    model = MyUnet(block_type='unet')
+    model = MyUnet(block_type='resnest')
 
     # 测试一，输出shape
     # input = torch.randn(2, 3, 256, 256).cuda()
@@ -217,4 +211,4 @@ if __name__ == "__main__":
     #-----------flops/G    params/M
     # unet      16.49G      8.64M
     # resnet    16.63G      8.81M
-
+    # resnest   15.84G      7.95M
