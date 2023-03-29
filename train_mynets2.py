@@ -144,7 +144,7 @@ class Trainer:
         )
 
         # 创建训练集和验证集的数据加载器
-        train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=self.args.num_workers)
+        train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=self.args.num_workers,drop_last=True)
         valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=self.args.num_workers)
 
         return train_loader, valid_loader
@@ -300,7 +300,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet_mobile.yaml'
+    cfgpath = r'cfg/my_new_block/unet_resnest.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
