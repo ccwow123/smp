@@ -69,7 +69,7 @@ class up_conv(nn.Module):
         return x
 
 
-class U_Net(nn.Module):
+class MyUnet(nn.Module):
     """
     UNet - Basic Implementation
     Paper : https://arxiv.org/abs/1505.04597
@@ -79,11 +79,11 @@ class U_Net(nn.Module):
                  base_c: int = 32,
                  block_type='unet',
                  activation='sigmoid'):
-        super(U_Net, self).__init__()
+        super().__init__()
 
         filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
 
-        self.Conv1 = Down(in_ch, filters[0])
+        self.Conv1 = conv_block(in_ch, filters[0])
         self.Conv2 = Down(filters[0], filters[1])
         self.Conv3 = Down(filters[1], filters[2])
         self.Conv4 = Down(filters[2], filters[3])
@@ -100,10 +100,9 @@ class U_Net(nn.Module):
         # smp-分割头
         # ----------------#
         self.segmentation_head = SegmentationHead(
-            in_channels=base_c,
+            in_channels=filters[0],
             out_channels=out_ch,
             activation=activation,
-            kernel_size=3,
         )
         self.initialize()
     # ----------------#
@@ -153,7 +152,10 @@ if __name__ == "__main__":
         print('flops: %.2fG' % (flops / 1e9))
         print('params: %.2fM' % (params / 1e6))
         return flops / 1e9, params / 1e6
-    model = U_Net().cuda()
+    model = MyUnet().cuda()
+    input = torch.randn(1, 3, 64, 64).cuda()
+    out = model(input)
+    print(out.shape)
     # model = ResUNet().cuda()
-    summary(model,(3,256,256))  # 输出网络结构
-    calculater_1(model,(3,256,256))
+    # summary(model,(3,256,256))  # 输出网络结构
+    # calculater_1(model,(3,256,256))

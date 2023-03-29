@@ -97,7 +97,7 @@ class Trainer:
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='simam')
 
         elif self.model_name == 'MyUnet':
-            model = MyUnet(3, num_classes=len(self.classes),activation=self.activation)
+            model = MyUnet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
 
 
 
