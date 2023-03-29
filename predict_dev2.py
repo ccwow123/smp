@@ -4,6 +4,7 @@ import os
 import time
 
 from PIL import Image
+from torch.utils.tensorboard import SummaryWriter
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -48,6 +49,15 @@ def palette_init():
         for v in pallette_dict.values():
             pallette += v
     return pallette
+# 网络结构可视化
+def watch_struction(model,model_name,input):
+    out_folder = "net_structure"
+    out = os.path.join(out_folder, model_name)
+    os.makedirs(out, exist_ok=True)
+    writer = SummaryWriter(log_dir=out, comment=model_name)
+    writer.add_graph(model, input)
+    writer.close()
+    print('输出网络结构到{}'.format(out))
 class Detecter():
     def __init__(self,args):
         self.args = args
@@ -99,10 +109,10 @@ class Detecter():
     # 创建模型
     def create_model(self):
         # create segmentation model with pretrained encoder
-        if self.model_name == 'MyUnet':
-            model = MyUnet(3, num_classes=len(self.classes), activation=self.activation)
-            best_model = self._load_pretrained_model(model)
-            # best_model = torch.load(self.args.weight)
+        # if self.model_name == 'MyUnet':
+        #     model = MyUnet(3, out_ch=len(self.classes), activation=self.activation)
+        #     best_model = self._load_pretrained_model(model)
+        best_model = torch.load(self.args.weight)
         return best_model
     def _load_pretrained_model(self, model):
         #这里看权重文件的格式，如果是字典的话就用load_state_dict，如果是模型的话就用load_model
@@ -129,6 +139,8 @@ class Detecter():
         predict_dataset,predict_dataset_vis = self.load_data()
         # 创建模型
         model = self.create_model()
+        if self.args.watch:
+            watch_struction(model, self.model_name, torch.rand(1, 3, 512, 512).cuda())
         # 模型推理
         model.cuda().eval()
         for i in range(len(predict_dataset)):
@@ -177,10 +189,11 @@ def parse_args():
     # 主要
     parser.add_argument('--dir', type=str, default=r'data/multi/data/test', help='test image dir')
     parser.add_argument('--model', type=str, default=r'cfg/my_new_block/unet.yaml', help='model name')
-    parser.add_argument('--weight', type=str, default=r'D:\hjj\smp\logs\03-28 23_13_31-MyUnet_', help='pretrained model')
+    parser.add_argument('--weight', type=str, default=r'logs\03-29 11_08_17-MyUnet_unet\best_model.pth', help='pretrained model')
     parser.add_argument("--method", default="fusion", choices=["fusion", "mask", "contours"], help="输出方式")
     # 其他
     parser.add_argument("--label", default="End skew", type=str, help="contours方式下的标签")
+    parser.add_argument("--watch", default=True, help="是否查看网络结构")
     args = parser.parse_args()
 
     return args

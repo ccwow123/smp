@@ -260,7 +260,10 @@ class Trainer:
                 #     'optimizer': optimizer.state_dict()
                 # }
                 # torch.save(checkpoint,os.path.join(self.log_dir,'best_model.pth'))
-                torch.save(model.state_dict(),os.path.join(self.log_dir,'best_model.pth'))
+                if self.args.save_all:
+                    torch.save(model, os.path.join(self.log_dir, 'best_model.pth'))#保存整个网络
+                else:
+                    torch.save(model.state_dict(),os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
             # 保存网络结构
             self.tb.add_graph(model, torch.rand(1, 3, 512, 512).to(self.device))
@@ -289,6 +292,7 @@ def parse_args(cfgpath):
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='动量')
     parser.add_argument('--weight-decay', default=1e-4, type=float,
                         metavar='W', help='权重衰减', dest='weight_decay')
+    parser.add_argument('--save_all', default=True, type=bool, help='是否保存所有模型')
 
     args = parser.parse_args()
 
