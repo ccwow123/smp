@@ -7,10 +7,8 @@ from torchsummary import summary
 from segmentation_models_pytorch.base import (
     SegmentationModel,
     SegmentationHead,
-    ClassificationHead,
 )
 from typing import Optional, Union, List
-from src.unet_mod.shuffle import ShuffleUnit
 
 # ----------------#
 # smp-初始化函数

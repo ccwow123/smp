@@ -13,6 +13,7 @@ from segmentation_models_pytorch.base import (
 from thop import profile
 from src.unet_mod_block.ResNeSt import Bottleneck
 from src.unet_mod_block.mobile import Bneck
+from src.unet_mod_block.shuffle import ShuffleUnit
 
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
@@ -145,6 +146,12 @@ class MyUnet(nn.Module):
             self.Conv3 = Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='RE',s=1,SE=True)
             self.Conv4 = Bneck(filters[2], operator_kernel=3,exp_size=filters[2]*4,out_size=filters[3],NL='HS',s=1,SE=True)
             self.Conv5 = Bneck(filters[3], operator_kernel=3,exp_size=filters[3]*4,out_size=filters[4],NL='HS',s=1,SE=True)
+        elif block_type == 'shuffle':
+            self.Maxpool = nn.Sequential()
+            self.Conv2 = ShuffleUnit(filters[0], filters[1], 2)
+            self.Conv3 = ShuffleUnit(filters[1], filters[2], 2)
+            self.Conv4 = ShuffleUnit(filters[2], filters[3], 2)
+            self.Conv5 = ShuffleUnit(filters[3], filters[4], 2)
         else:
             raise NotImplementedError('block_type 不存在')
         # 解码器
@@ -201,7 +208,7 @@ class MyUnet(nn.Module):
 
 
 if __name__ == "__main__":
-    model = MyUnet(block_type='mobile')
+    model = MyUnet(block_type='shuffle')
 
     # 测试一，输出shape
     # input = torch.randn(2, 3, 256, 256).cuda()
@@ -219,3 +226,4 @@ if __name__ == "__main__":
     # resnet    16.63G      8.81M
     # resnest   15.84G      7.95M
     # mobile    13.84G      5.71M
+    # shuffle   13.30G      4.21M

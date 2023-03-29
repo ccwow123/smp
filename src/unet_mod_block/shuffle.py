@@ -65,6 +65,6 @@ class ShuffleUnit(nn.Module):
         return out
 
 if __name__ == '__main__':
-    x = torch.randn(1, 64, 512, 512)
-    model = ShuffleUnit(64, 2, 2)
+    x = torch.randn(1, 32, 256, 256)
+    model = ShuffleUnit(32, 64, 2)
     print(model(x).shape)
