@@ -252,8 +252,8 @@ class Trainer:
                 self.model_size=calculater_1(model,input_size)
             self.save_logs(i, log_train, log_val, confmat, optimizer)
             # 保存最好的模型
-            if max_score < confmat['pa']:
-                max_score = confmat['pa']
+            if max_score < confmat['miou']:
+                max_score = confmat['miou']
                 # checkpoint = {
                 #     'epoch': i,
                 #     'state_dict': model.state_dict(),
@@ -300,7 +300,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet.yaml'
+    cfgpath = r'cfg/my_new_block/unet_res.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
