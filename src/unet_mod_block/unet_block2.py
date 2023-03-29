@@ -142,8 +142,8 @@ class MyUnet(nn.Module):
             self.Conv4 = Bottleneck(filters[2], filters[3])
             self.Conv5 = Bottleneck(filters[3], filters[4])
         elif block_type == 'mobile':
-            self.Conv2 = Bneck(filters[0], operator_kernel=3,exp_size=filters[0]*4,out_size=filters[1],NL='RE',s=1,SE=True)
-            self.Conv3 = Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='RE',s=1,SE=True)
+            self.Conv2 = Bneck(filters[0], operator_kernel=3,exp_size=filters[0]*4,out_size=filters[1],NL='HS',s=1,SE=True)
+            self.Conv3 = Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='HS',s=1,SE=True)
             self.Conv4 = Bneck(filters[2], operator_kernel=3,exp_size=filters[2]*4,out_size=filters[3],NL='HS',s=1,SE=True)
             self.Conv5 = Bneck(filters[3], operator_kernel=3,exp_size=filters[3]*4,out_size=filters[4],NL='HS',s=1,SE=True)
         elif block_type == 'shuffle':

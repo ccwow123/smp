@@ -161,7 +161,7 @@ class Bneck(nn.Module):
         # 判断是否使用跳跃连接
         if self.skip:
             x3 = x3 + x
-        print("bneck:", x3.shape)
+        # print("bneck:", x3.shape)
         return x3
 
 

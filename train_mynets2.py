@@ -266,7 +266,7 @@ class Trainer:
                     torch.save(model.state_dict(),os.path.join(self.log_dir,'best_model.pth'))
                 print('--Model saved!')
             # 保存网络结构
-            self.tb.add_graph(model, torch.rand(1, 3, 512, 512).to(self.device))
+            # self.tb.add_graph(model, torch.rand(1, 3, 512, 512).to(self.device))
             # 计算剩余训练时间
             self.time_calculater.time_cal(i, self.args.epochs)
         # 计算训练时间
@@ -300,7 +300,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet_res.yaml'
+    cfgpath = r'cfg/my_new_block/unet_mobile.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
