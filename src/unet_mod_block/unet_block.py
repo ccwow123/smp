@@ -268,6 +268,16 @@ class MyUnet_EX(SegmentationModel):
 
         return logits
 if __name__ == "__main__":
-    model = MyUnet_EX(block_type='resnet').cuda()
+    from thop import profile
+    def calculater_1(model, input_size=(3, 512, 512)):
+        # model = torchvision.models.alexnet(pretrained=False)
+        # dummy_input = torch.randn(1, 3, 224, 224)
+        dummy_input = torch.randn(1, *input_size).cuda()
+        flops, params = profile(model, (dummy_input,))
+        print('flops: %.2fG' % (flops / 1e9))
+        print('params: %.2fM' % (params / 1e6))
+        return flops / 1e9, params / 1e6
+    model = MyUnet_EX(block_type='unet').cuda()
     # model = ResUNet().cuda()
     summary(model,(3,256,256))  # 输出网络结构
+    calculater_1(model,(3,256,256))
