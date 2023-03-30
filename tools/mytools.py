@@ -39,6 +39,39 @@ class Time_calculater(object):
         self.remain_time=(now_time-self.last_time)*(N-i-1)
         self.last_time=now_time
         print("剩余时间："+self.time_change(self.remain_time))
+def model_test(model,input_size,method, device='cuda'):
+    '''
+
+    Args:
+        model: 要进行测试的模型
+        input_size:  输入tensor的尺寸 (2,3,256,256)
+        method:  测试方法，shape/summary/params
+        device:  测试设备，cuda/cpu
+
+    Returns: None
+
+    '''
+    from thop import profile
+    from torchsummary import summary
+    def calculater_1(model, input_size=(3, 512, 512), device='cuda'):
+        # model = torchvision.models.alexnet(pretrained=False)
+        # dummy_input = torch.randn(1, 3, 224, 224)
+        # dummy_input = torch.randn(1, *input_size).cuda()
+        dummy_input = torch.randn(1, *input_size).to(device)
+        flops, params = profile(model, (dummy_input,))
+        print('flops: %.2fG' % (flops / 1e9))
+        print('params: %.2fM' % (params / 1e6))
+        return flops / 1e9, params / 1e6
+
+    model = model.to(device)
+    if method == 'shape':
+        input = torch.randn(input_size).to(device)
+        out = model(input)
+        print('out.shape:', out.shape)
+    elif method == 'summary':
+        summary(model, input_size[1:])
+    elif method == 'params':
+        calculater_1(model, input_size[1:], device=device)
 
 class Train_base:
     def __init__(self,args):

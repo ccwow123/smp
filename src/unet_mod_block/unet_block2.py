@@ -3,26 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
 import torch
-
-from torchsummary import summary
-from segmentation_models_pytorch.base import (
-    SegmentationModel,
-    SegmentationHead,
-    ClassificationHead,
-)
-from thop import profile
+from segmentation_models_pytorch.base import SegmentationHead
+from tools.mytools import model_test
 from src.unet_mod_block.ResNeSt import Bottleneck
 from src.unet_mod_block.mobile import Bneck
 from src.unet_mod_block.shuffle import ShuffleUnit
 
-def calculater_1(model, input_size=(3, 512, 512)):
-    # model = torchvision.models.alexnet(pretrained=False)
-    # dummy_input = torch.randn(1, 3, 224, 224)
-    dummy_input = torch.randn(1, *input_size).cuda()
-    flops, params = profile(model, (dummy_input,))
-    print('flops: %.2fG' % (flops / 1e9))
-    print('params: %.2fM' % (params / 1e6))
-    return flops / 1e9, params / 1e6
 # ----------------#
 # smp-初始化函数
 # ----------------#
@@ -218,21 +204,133 @@ class MyUnet(nn.Module):
         out = self.segmentation_head(y_1)
         return out
 
+#----------------#
+#     yolo_Unet
+#----------------#
+from src.unet_mod_block.yolo_block import Conv,C3,SPPF
+class up_C3(nn.Module):
+    """
+    Up Convolution Block
+    """
+
+    def __init__(self, in_ch, out_ch):
+        super().__init__()
+        self.up = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
+        )
+        self.conv = Conv(in_ch, out_ch)
+
+    def forward(self, x1,x2):
+        x1 = self.up(x1)
+        x = torch.cat([x2, x1], dim=1)
+        x = self.conv(x)
+        return x
+class up(nn.Module):
+    """
+    Up Convolution Block
+    """
+
+    def __init__(self, in_ch, out_ch):
+        super().__init__()
+        self.up = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x1):
+        x1 = self.up(x1)
+        return x1
+
+class yolo_Unet(nn.Module):
+    def __init__(self, in_ch=3, out_ch=2,
+                 base_c: int = 64,
+                 block_type='C3',
+                 activation='sigmoid'):
+        super().__init__()
+        #           64, 128, 256, 512, 1024
+        filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
+        # 编码器
+        self.Conv1 =Conv(in_ch, filters[0], 6, 2, 2)
+        self.Conv2 =nn.Sequential(Conv(filters[0], filters[1], 3, 2, 1),
+                                  C3(filters[1], filters[1]))
+        self.Conv3 =nn.Sequential(Conv(filters[1], filters[2], 3, 2, 1),
+                                    C3(filters[2], filters[2]))
+        self.Conv4 =nn.Sequential(Conv(filters[2], filters[3], 3, 2, 1),
+                                    C3(filters[3], filters[3]))
+        self.Conv5 =nn.Sequential(Conv(filters[3], filters[4], 3, 2, 1),
+                                    C3(filters[4], filters[4]))
+        self.SPP = SPPF(filters[4], filters[4])
+        # 解码器
+        self.Up4 = up_C3(filters[4], filters[3])
+        self.Up3 = up_C3(filters[3], filters[2])
+        self.Up2 = up_C3(filters[2], filters[1])
+        self.Up1 = up_C3(filters[1], filters[0])
+        self.Up0 = up(filters[0], filters[0])
+
+        # ----------------#
+        # smp-分割头
+        # ----------------#
+        self.segmentation_head = SegmentationHead(
+            in_channels=filters[0],
+            out_channels=out_ch,
+            activation=activation,
+        )
+        self.initialize()
+
+    # ----------------#
+    # smp-初始化
+    # ----------------#
+    def initialize(self):
+        def initialize_weights():
+            for m in self.modules():
+                # 判断是否属于Conv2d
+                if isinstance(m, nn.Conv2d):
+                    torch.nn.init.xavier_normal_(m.weight.data)
+                    # 判断是否有偏置
+                    if m.bias is not None:
+                        torch.nn.init.constant_(m.bias.data, 0.3)
+                elif isinstance(m, nn.Linear):
+                    torch.nn.init.normal_(m.weight.data, 0.1)
+                    if m.bias is not None:
+                        torch.nn.init.zeros_(m.bias.data)
+                elif isinstance(m, nn.BatchNorm2d):
+                    m.weight.data.fill_(1)
+                    m.bias.data.fill_(0)
+
+        initialize_weights()
+        initialize_head(self.segmentation_head)
+
+
+    def forward(self, x):
+        x_1 = self.Conv1(x)#128, 160, 160
+        x_2 = self.Conv2(x_1)#256, 80, 80
+        x_3 = self.Conv3(x_2)#512, 40, 40
+        x_4 = self.Conv4(x_3)#1024, 20, 20
+        # mid
+        x_5 = self.Conv5(x_4)#1024, 20, 20
+        x_mid = self.SPP(x_5)#1024, 20, 20
+
+        y_4 = self.Up4(x_mid,x_4)#512, 40, 40
+        y_3 = self.Up3(y_4,x_3)#256, 80, 80
+        y_2 = self.Up2(y_3,x_2)#128, 160, 160
+        y_1 = self.Up1(y_2,x_1)#64, 320, 320
+        y_0 = self.Up0(y_1)#32, 640, 640
+
+        out = self.segmentation_head(y_0)
+        return out
+
+
+
+
 
 if __name__ == "__main__":
-    model = MyUnet(block_type='mobile').cuda()
-
-    # 测试一，输出shape
-    # input = torch.randn(2, 3, 256, 256).cuda()
-    # out = model(input)
-    # print(out.shape)
-
-    # 测试二，输出网络结构
-    # summary(model,(3,256,256))  # 输出网络结构
-
-    # 测试三，计算参数量
-    calculater_1(model,(3,256,256))
-
+    model = yolo_Unet()
+    model_test(model,(2,3,256,256),'params')
     #-----------flops/G    params/M
     # unet      16.49G      8.64M
     # resnet    16.63G      8.81M
