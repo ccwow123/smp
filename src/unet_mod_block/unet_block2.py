@@ -18,7 +18,7 @@ from src.unet_mod_block.shuffle import ShuffleUnit
 def calculater_1(model, input_size=(3, 512, 512)):
     # model = torchvision.models.alexnet(pretrained=False)
     # dummy_input = torch.randn(1, 3, 224, 224)
-    dummy_input = torch.randn(1, *input_size)
+    dummy_input = torch.randn(1, *input_size).cuda()
     flops, params = profile(model, (dummy_input,))
     print('flops: %.2fG' % (flops / 1e9))
     print('params: %.2fM' % (params / 1e6))
@@ -142,10 +142,22 @@ class MyUnet(nn.Module):
             self.Conv4 = Bottleneck(filters[2], filters[3])
             self.Conv5 = Bottleneck(filters[3], filters[4])
         elif block_type == 'mobile':
-            self.Conv2 = Bneck(filters[0], operator_kernel=3,exp_size=filters[0]*4,out_size=filters[1],NL='HS',s=1,SE=True)
-            self.Conv3 = Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='HS',s=1,SE=True)
-            self.Conv4 = Bneck(filters[2], operator_kernel=3,exp_size=filters[2]*4,out_size=filters[3],NL='HS',s=1,SE=True)
-            self.Conv5 = Bneck(filters[3], operator_kernel=3,exp_size=filters[3]*4,out_size=filters[4],NL='HS',s=1,SE=True)
+            self.Conv2 = nn.Sequential(Bneck(filters[0], operator_kernel=3,exp_size=filters[0],out_size=filters[0],NL='HS',s=1,SE=True),
+                                        Bneck(filters[0], operator_kernel=3,exp_size=filters[0]*4,out_size=filters[1],NL='HS',s=1,SE=True),
+                                        Bneck(filters[1], operator_kernel=3,exp_size=filters[0]*8,out_size=filters[1],NL='HS',s=1,SE=True))
+            self.Conv3 = nn.Sequential(Bneck(filters[1], operator_kernel=3,exp_size=filters[1],out_size=filters[1],NL='HS',s=1,SE=True),
+                                        Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='HS',s=1,SE=True),
+                                        Bneck(filters[2], operator_kernel=3,exp_size=filters[1]*8,out_size=filters[2],NL='HS',s=1,SE=True))
+            self.Conv4 = nn.Sequential(Bneck(filters[2], operator_kernel=3,exp_size=filters[2],out_size=filters[2],NL='HS',s=1,SE=True),
+                                        Bneck(filters[2], operator_kernel=3,exp_size=filters[2]*4,out_size=filters[3],NL='HS',s=1,SE=True),
+                                        Bneck(filters[3], operator_kernel=3,exp_size=filters[2]*8,out_size=filters[3],NL='HS',s=1,SE=True))
+            self.Conv5 = nn.Sequential(Bneck(filters[3], operator_kernel=3,exp_size=filters[3],out_size=filters[3],NL='HS',s=1,SE=True),
+                                        Bneck(filters[3], operator_kernel=3,exp_size=filters[3]*4,out_size=filters[4],NL='HS',s=1,SE=True),
+                                        Bneck(filters[4], operator_kernel=3,exp_size=filters[3]*8,out_size=filters[4],NL='HS',s=1,SE=True))
+            # self.Conv2 = Bneck(filters[0], operator_kernel=3,exp_size=filters[0]*4,out_size=filters[1],NL='HS',s=1,SE=True)
+            # self.Conv3 = Bneck(filters[1], operator_kernel=3,exp_size=filters[1]*4,out_size=filters[2],NL='HS',s=1,SE=True)
+            # self.Conv4 = Bneck(filters[2], operator_kernel=3,exp_size=filters[2]*4,out_size=filters[3],NL='HS',s=1,SE=True)
+            # self.Conv5 = Bneck(filters[3], operator_kernel=3,exp_size=filters[3]*4,out_size=filters[4],NL='HS',s=1,SE=True)
         elif block_type == 'shuffle':
             self.Maxpool = nn.Sequential()
             self.Conv2 = ShuffleUnit(filters[0], filters[1], 2)
@@ -208,7 +220,7 @@ class MyUnet(nn.Module):
 
 
 if __name__ == "__main__":
-    model = MyUnet(block_type='shuffle')
+    model = MyUnet(block_type='mobile').cuda()
 
     # 测试一，输出shape
     # input = torch.randn(2, 3, 256, 256).cuda()
@@ -226,4 +238,5 @@ if __name__ == "__main__":
     # resnet    16.63G      8.81M
     # resnest   15.84G      7.95M
     # mobile    13.84G      5.71M
+    # mobilev2  16.53G      11.58M
     # shuffle   13.30G      4.21M
