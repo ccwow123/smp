@@ -207,7 +207,7 @@ class MyUnet(nn.Module):
 #----------------#
 #     yolo_Unet
 #----------------#
-from src.unet_mod_block.yolo_block import Conv,C3,SPPF
+from src.unet_mod_block.yolo_block import Conv,C3,SPPF,C3TR,C3SPP,C3Ghost
 class up_C3(nn.Module):
     """
     Up Convolution Block
@@ -228,12 +228,12 @@ class up_C3(nn.Module):
         x = torch.cat([x2, x1], dim=1)
         x = self.conv(x)
         return x
-class up(nn.Module):
+class Up_Con(nn.Module):
     """
     Up Convolution Block
     """
 
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch,Conv):
         super().__init__()
         self.up = nn.Sequential(
             nn.Upsample(scale_factor=2),
@@ -241,10 +241,14 @@ class up(nn.Module):
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True)
         )
+        self.conv = Conv(in_ch, out_ch)
 
-    def forward(self, x1):
+    def forward(self, x1,x2):
         x1 = self.up(x1)
-        return x1
+        x = torch.cat([x2, x1], dim=1)
+        x = self.conv(x)
+        return x
+
 
 class yolo_Unet(nn.Module):
     def __init__(self, in_ch=3, out_ch=2,
@@ -271,7 +275,7 @@ class yolo_Unet(nn.Module):
         self.Up3 = up_C3(filters[3], filters[2])
         self.Up2 = up_C3(filters[2], filters[1])
         self.Up1 = up_C3(filters[1], filters[0])
-        self.Up0 = up(filters[0], filters[0])
+        # self.Up0 = up(filters[0], filters[0])
 
         # ----------------#
         # smp-分割头
@@ -333,24 +337,36 @@ class yolo_Unetv2(nn.Module):
         super().__init__()
         #           64, 128, 256, 512, 1024
         filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
+        if block_type == 'C3':
+            Con_b = C3
+        elif block_type == 'C3TR':
+            Con_b = C3TR
+        elif block_type == 'C3SPP':
+            Con_b = C3SPP
+        elif block_type == 'C3Ghost':
+            Con_b = C3Ghost
         # 编码器
-        self.Conv1 =Conv(in_ch, filters[0], 3)
+        self.Conv1 =Conv(in_ch, filters[0], 6, 2, 2)
         self.Conv2 =nn.Sequential(Conv(filters[0], filters[1], 3, 2, 1),
-                                  C3(filters[1], filters[1]))
+                                  Con_b(filters[1], filters[1]))
         self.Conv3 =nn.Sequential(Conv(filters[1], filters[2], 3, 2, 1),
-                                    C3(filters[2], filters[2]))
+                                    Con_b(filters[2], filters[2]))
         self.Conv4 =nn.Sequential(Conv(filters[2], filters[3], 3, 2, 1),
-                                    C3(filters[3], filters[3]))
+                                    Con_b(filters[3], filters[3]))
         self.Conv5 =nn.Sequential(Conv(filters[3], filters[4], 3, 2, 1),
-                                    C3(filters[4], filters[4]))
+                                    Con_b(filters[4], filters[4]))
         self.SPP = SPPF(filters[4], filters[4])
         # 解码器
-        self.Up4 = up_C3(filters[4], filters[3])
-        self.Up3 = up_C3(filters[3], filters[2])
-        self.Up2 = up_C3(filters[2], filters[1])
-        self.Up1 = up_C3(filters[1], filters[0])
-        self.Up0 = up(filters[0], filters[0])
-
+        self.Up4 = Up_Con(filters[4], filters[3],Con_b)
+        self.Up3 = Up_Con(filters[3], filters[2],Con_b)
+        self.Up2 = Up_Con(filters[2], filters[1],Con_b)
+        self.Up1 = Up_Con(filters[1], filters[0],Con_b)
+        self.up0 = nn.Sequential(
+                        nn.Upsample(scale_factor=2),
+                        nn.Conv2d(filters[0], filters[0], kernel_size=3, stride=1, padding=1, bias=True),
+                        nn.BatchNorm2d(filters[0]),
+                        nn.SiLU()
+                    )
         # ----------------#
         # smp-分割头
         # ----------------#
@@ -398,8 +414,9 @@ class yolo_Unetv2(nn.Module):
         y_3 = self.Up3(y_4,x_3)#256, 80, 80
         y_2 = self.Up2(y_3,x_2)#128, 160, 160
         y_1 = self.Up1(y_2,x_1)#64, 320, 320
+        y_0 = self.up0 (y_1)
 
-        out = self.segmentation_head(y_1)
+        out = self.segmentation_head(y_0)
         return out
 
 
@@ -407,7 +424,7 @@ class yolo_Unetv2(nn.Module):
 
 if __name__ == "__main__":
     model = yolo_Unetv2()
-    model_test(model,(2,3,256,256),'shape')
+    model_test(model,(2,3,256,256),'params')
     #----256----flops/G    params/M
     # unet      16.49G      8.64M
     # resnet    16.63G      8.81M
