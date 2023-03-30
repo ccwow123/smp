@@ -255,7 +255,8 @@ class yolo_Unet(nn.Module):
         #           64, 128, 256, 512, 1024
         filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
         # 编码器
-        self.Conv1 =Conv(in_ch, filters[0], 6, 2, 2)
+        # self.Conv1 =Conv(in_ch, filters[0], 6, 2, 2)
+        self.Conv1 =Conv(in_ch, filters[0], 3, 2, 1)
         self.Conv2 =nn.Sequential(Conv(filters[0], filters[1], 3, 2, 1),
                                   C3(filters[1], filters[1]))
         self.Conv3 =nn.Sequential(Conv(filters[1], filters[2], 3, 2, 1),
@@ -331,10 +332,11 @@ class yolo_Unet(nn.Module):
 if __name__ == "__main__":
     model = yolo_Unet()
     model_test(model,(2,3,256,256),'params')
-    #-----------flops/G    params/M
+    #----256----flops/G    params/M
     # unet      16.49G      8.64M
     # resnet    16.63G      8.81M
     # resnest   15.84G      7.95M
     # mobile    13.84G      5.71M
     # mobilev2  16.53G      11.58M
     # shuffle   13.30G      4.21M
+    # yolo      10.53G      22.18M
