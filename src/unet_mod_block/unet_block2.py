@@ -207,13 +207,13 @@ class MyUnet(nn.Module):
 #----------------#
 #     yolo_Unet
 #----------------#
-from src.unet_mod_block.yolo_block import Conv,C3,SPPF
+from src.unet_mod_block.yolo_block import Conv,C3,SPPF,C3TR,C3SPP,C3Ghost
 class up_C3(nn.Module):
     """
     Up Convolution Block
     """
 
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch,Conv_b):
         super().__init__()
         self.up = nn.Sequential(
             nn.Upsample(scale_factor=2),
@@ -221,7 +221,7 @@ class up_C3(nn.Module):
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True)
         )
-        self.conv = Conv(in_ch, out_ch)
+        self.conv = Conv_b(in_ch, out_ch)
 
     def forward(self, x1,x2):
         x1 = self.up(x1)
@@ -254,23 +254,38 @@ class yolo_Unetv2(nn.Module):
         super().__init__()
         #           64, 128, 256, 512, 1024
         filters = [base_c, base_c * 2, base_c * 4, base_c * 8, base_c * 16]
+        if block_type == 'C3':
+            Conv_b = C3
+        elif block_type == 'C3TR':
+            Conv_b = C3TR
+        elif block_type == 'C3SPP':
+            Conv_b = C3SPP
+        elif block_type == 'C3Ghost':
+            Conv_b = C3Ghost
+        else:
+            raise NotImplementedError(f'Block type {block_type} is not implemented')
         # 编码器
         self.Conv1 =Conv(in_ch, filters[0], 6, 2, 2)
         self.Conv2 =nn.Sequential(Conv(filters[0], filters[1], 3, 2, 1),
-                                  C3(filters[1], filters[1]))
+                                  Conv_b(filters[1], filters[1]))
         self.Conv3 =nn.Sequential(Conv(filters[1], filters[2], 3, 2, 1),
-                                    C3(filters[2], filters[2]))
+                                    Conv_b(filters[2], filters[2]))
         self.Conv4 =nn.Sequential(Conv(filters[2], filters[3], 3, 2, 1),
-                                    C3(filters[3], filters[3]))
+                                    Conv_b(filters[3], filters[3]))
         self.Conv5 =nn.Sequential(Conv(filters[3], filters[4], 3, 2, 1),
-                                    C3(filters[4], filters[4]))
+                                    Conv_b(filters[4], filters[4]))
         self.SPP = SPPF(filters[4], filters[4])
         # 解码器
-        self.Up4 = up_C3(filters[4], filters[3])
-        self.Up3 = up_C3(filters[3], filters[2])
-        self.Up2 = up_C3(filters[2], filters[1])
-        self.Up1 = up_C3(filters[1], filters[0])
-        self.Up0 = up(filters[0], filters[0])
+        self.Up4 = up_C3(filters[4], filters[3],Conv_b)
+        self.Up3 = up_C3(filters[3], filters[2],Conv_b)
+        self.Up2 = up_C3(filters[2], filters[1],Conv_b)
+        self.Up1 = up_C3(filters[1], filters[0],Conv_b)
+        self.Up0 = nn.Sequential(
+                        nn.Upsample(scale_factor=2),
+                        nn.Conv2d(filters[0], filters[0], kernel_size=3, stride=1, padding=1, bias=True),
+                        nn.BatchNorm2d(filters[0]),
+                        nn.ReLU(inplace=True)
+                    )
 
         # ----------------#
         # smp-分割头
