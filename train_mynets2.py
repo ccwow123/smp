@@ -98,6 +98,8 @@ class Trainer:
 
         elif self.model_name == 'MyUnet':
             model = MyUnet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
+        elif self.model_name == 'yolo_Unet':
+            model = yolo_Unet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
 
 
 
@@ -300,7 +302,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet_resnest.yaml'
+    cfgpath = r'cfg/my_new_block/unet_yolo.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
