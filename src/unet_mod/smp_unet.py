@@ -263,11 +263,22 @@ class ResUNet(SegmentationModel):
 
         return logits
 
-class ShuffleUNet(SegmentationModel):
+# 论文原版
+class conv(nn.Sequential):
+    def __init__(self, in_channels, out_channels):
+        super().__init__(
+            nn.MaxPool2d(2, stride=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.ReLU(inplace=True)
+        )
+
+class UNet000(SegmentationModel):
     def __init__(self,
                  in_channels: int = 3,
                  num_classes: int = 2,
-                 bilinear: bool = True,
+                 bilinear: bool = False,
                  base_c: int = 64,
                  activation='sigmoid',):
         super().__init__()
@@ -276,11 +287,11 @@ class ShuffleUNet(SegmentationModel):
         self.bilinear = bilinear
 
         self.in_conv = DoubleConv(in_channels, base_c)
-        self.down1 = ShuffleUnit(base_c, base_c * 2)
-        self.down2 = ShuffleUnit(base_c * 2, base_c * 4)
-        self.down3 = ShuffleUnit(base_c * 4, base_c * 8)
+        self.down1 = Down(base_c, base_c * 2)
+        self.down2 = Down(base_c * 2, base_c * 4)
+        self.down3 = Down(base_c * 4, base_c * 8)
         factor = 2 if bilinear else 1  # 因为上采样的bilinear方法引入一个系数
-        self.down4 = ShuffleUnit(base_c * 8, base_c * 16 // factor)
+        self.down4 = Down(base_c * 8, base_c * 16 // factor)
         self.up1 = Up(base_c * 16, base_c * 8 // factor, bilinear)
         self.up2 = Up(base_c * 8, base_c * 4 // factor, bilinear)
         self.up3 = Up(base_c * 4, base_c * 2 // factor, bilinear)
@@ -300,7 +311,7 @@ class ShuffleUNet(SegmentationModel):
         self.classification_head = None
 
         self.initialize()
-
+        self.initialize_weights()
     # ----------------#
     # smp-初始化
     # ----------------#
@@ -309,7 +320,21 @@ class ShuffleUNet(SegmentationModel):
         initialize_head(self.segmentation_head)
         if self.classification_head is not None:
             initialize_head(self.classification_head)
-
+    def initialize_weights(self):
+        for m in self.modules():
+            # 判断是否属于Conv2d
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.xavier_normal_(m.weight.data)
+                # 判断是否有偏置
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias.data, 0.3)
+            elif isinstance(m, nn.Linear):
+                torch.nn.init.normal_(m.weight.data, 0.1)
+                if m.bias is not None:
+                    torch.nn.init.zeros_(m.bias.data)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.fill_(0)
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         x1 = self.in_conv(x)
         x2 = self.down1(x1)
@@ -327,6 +352,7 @@ class ShuffleUNet(SegmentationModel):
 
 if __name__ == "__main__":
     # model = UNet().cuda()
-    model = ResUNet().cuda()
+    # model = ResUNet().cuda()
+    model = UNet000().cuda()
     summary(model,(3,480,480))  # 输出网络结构
 

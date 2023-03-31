@@ -91,10 +91,11 @@ class Trainer:
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='soca')
         elif self.model_name == 'unet0_res':
             model = ResUNet(3, num_classes=len(self.classes),activation=self.activation)
-        elif self.model_name == 'unet0_shuffle':
-            model = ShuffleUNet(3, num_classes=len(self.classes),activation=self.activation)
         elif self.model_name == 'unet0_Simam':
             model = UNet_attention_ex(3, num_classes=len(self.classes), activation=self.activation, method='simam')
+
+        elif self.model_name == 'unet000':
+            model = UNet000(3, num_classes=len(self.classes),activation=self.activation)
 
         elif self.model_name == 'MyUnet':
             model = MyUnet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
