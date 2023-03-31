@@ -98,8 +98,6 @@ class Trainer:
 
         elif self.model_name == 'MyUnet':
             model = MyUnet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
-        elif self.model_name == 'yolo_Unet':
-            model = yolo_Unet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
         elif self.model_name == 'yolo_Unetv2':
             model = yolo_Unetv2(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
 
@@ -287,7 +285,7 @@ def parse_args(cfgpath):
     parser.add_argument("--data-path", default=r'data/E skew xxx', help="VOCdevkit 路径")
     parser.add_argument("--batch-size", default=2, type=int, help="分块大小")
     parser.add_argument("--base-size", default=[256, 256], type=int, help="图片缩放大小")
-    parser.add_argument("--crop-size", default=[64, 64], type=int, help="图片裁剪大小")
+    parser.add_argument("--crop-size", default=[256, 256], type=int, help="图片裁剪大小")
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="训练轮数")
     parser.add_argument("--num-workers", default=0, type=int, help="数据加载器的线程数")
     parser.add_argument('--lr', default=1e-4, type=float, help='初始学习率')
@@ -304,7 +302,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet_yolo2.yaml'
+    cfgpath = r'cfg/my_new_block/unet_yolo3.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
