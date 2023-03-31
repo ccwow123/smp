@@ -100,6 +100,8 @@ class Trainer:
             model = MyUnet(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
         elif self.model_name == 'MyUnet_EX':
             model = MyUnet_EX(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
+        elif self.model_name == 'MyUnet_EX2':
+            model = MyUnet_EX2(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation,drop_prob=0.9, block_size=7)
         elif self.model_name == 'yolo_Unetv2':
             model = yolo_Unetv2(3, out_ch=len(self.classes),block_type=self.encoder,activation=self.activation)
 
@@ -304,7 +306,7 @@ def parse_args(cfgpath):
 
 
 if __name__ == '__main__':
-    cfgpath = r'cfg/my_new_block/unet_ex.yaml'
+    cfgpath = r'cfg/my_new_block/unet_ex2.yaml'
     # 数据集所在的目录
     args = parse_args(cfgpath)
     trainer = Trainer(args)
